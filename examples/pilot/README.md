@@ -3,7 +3,7 @@
 Run with `.venv/bin/python scripts/run_pilot.py` from the repository root.
 The script creates a new pilot directory and exports each run plus an overview.
 
-Each run uses four GPT-6.1 Sol agents, 12 experiments per agent, 15-second
+Each run uses four GPT-6.1 Sol agents, 10 experiments per agent, 15-second
 experiment delays, a 30-minute per-agent timeout, and simultaneous agent starts. Agent identities are
 opaque and random. Notebook timestamps and reasoning summaries are enabled.
 Each matched set runs its three conditions concurrently in isolated storage.

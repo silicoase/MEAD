@@ -1,5 +1,5 @@
 agents = 4
-experiment_budget = 12
+experiment_budget = 10
 max_turns = 80
 timeout_seconds = 1800
 runs_visibility = "all"
