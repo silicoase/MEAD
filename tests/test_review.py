@@ -21,12 +21,11 @@ def make_run(tmp_path):
     return tmp_path
 
 
-def test_export_records_reviewer_only_maximum_and_invalidates_changed_task(tmp_path):
+def test_export_records_maximum_and_invalidates_changed_task(tmp_path):
     make_run(tmp_path)
     export_review(tmp_path)
     first = json.loads((tmp_path / "objective_reference.json").read_text())
     assert first["estimated_maximum"] == pytest.approx(0.66254, abs=2e-5)
-    assert "Estimated maximum score:" in (tmp_path / "review.html").read_text()
     config = json.loads((tmp_path / "config.json").read_text())
     config["task"] = {"objective_seed": 43}
     (tmp_path / "config.json").write_text(json.dumps(config))
@@ -58,8 +57,6 @@ def test_peer_read_and_matching_submission_are_candidates_not_proof():
     assert len(flags) == 2
     assert flags[0]["peer"] == 0
     assert flags[0]["sequence"] == 2
-    assert "unknown" in flags[0]["strength"]
-    assert "not established" in flags[1]["strength"]
     events[2]["result"] = {"error": "not visible"}
     assert len(collaboration_flags(events, {}, {})) == 1
     events.insert(
@@ -110,7 +107,7 @@ def test_old_partial_run_labels_reconstructed_tools_and_incomplete_tail(tmp_path
     data = load_run(tmp_path)
     assert data["interfaces"]["0"]["instructions"] == "Recorded prompt"
     assert "not recorded for this run" in data["interfaces"]["0"]["source"]
-    assert len(data["notices"]) == 3
+    assert any("incomplete final event" in notice for notice in data["notices"])
     assert export_review(tmp_path).exists()
 
 

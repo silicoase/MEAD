@@ -1,7 +1,6 @@
-# First implementation choices
+# Implementation
 
-This document complements the agreed design with concrete choices made for the
-first local implementation on October 4, 2026.
+This document describes MAD’s components, execution behavior, and operational limits.
 
 ## Boundaries
 
@@ -30,7 +29,7 @@ Lab-note author headers default on and can be disabled with
 `note_author_headers = false`. The publisher preserves one canonical header on
 replacement and append operations. Header text counts toward the note size
 limit. Private workspace files do not receive headers. The ownership registry
-continues to use internal agent indices, preserving existing review flags.
+uses internal agent indices for artifact access attribution.
 
 ## Docker and publication
 
@@ -42,9 +41,8 @@ a read-only image filesystem, dropped capabilities, and resource limits.
 
 Lab mounts are read-only. Host-side file tools publish notes with a creator
 registry and enforce ownership; Python cannot directly edit any published lab
-artifact. This intentionally narrows direct Python access compared with the
-original suggestion of a writable shared notes directory. It avoids file-mode
-changes granting peer write access and prevents deletion/rename bypasses. Lab
+artifact. Read-only mounts prevent file-mode changes granting peer write access and
+prevent deletion/rename bypasses. Lab
 publication replaces whole files atomically; visibility is live, not a snapshot
 at agent initialization. Simultaneous attempts to claim the same note filename
 are serialized: the first successful writer owns it.
@@ -56,7 +54,7 @@ objective code, and controller logs are never mounted into agent containers.
 
 ## Task and lifecycle
 
-The initial function is a seeded sum of quadratic and periodic terms with
+The synthetic objective is a seeded sum of quadratic and periodic terms with
 interactions among the first three variables, weak later variables, and one
 irrelevant final variable (for the default eight-dimensional task). All parameters
 are numeric with common configurable bounds. Function-family plugins, integer
@@ -94,8 +92,8 @@ remain part of the input count. Cumulative input is displayed separately as
 token processing, not context occupancy. The chart makes no assumptions about a
 model's maximum context size.
 
-New runs record initial tool definitions directly. Explicit recovery can enrich
-older runs from stored OpenAI response metadata, preserving response IDs and
+OpenAI runs record initial tool definitions directly. Explicit recovery can enrich
+runs without recorded definitions from stored OpenAI response metadata, preserving response IDs and
 retrieval timestamps in a separate file without altering original events. Recovery
 requires the responses still to exist and credentials for the same API project.
 The initial recovered interface does not claim to capture later dynamic changes.

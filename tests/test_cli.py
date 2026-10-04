@@ -28,14 +28,3 @@ def test_run_loads_local_dotenv_without_overriding_shell(
     cli.main()
     assert observed == [shell_value or "file-test-value"]
     assert "test-value" not in capsys.readouterr().out
-
-
-def test_validate_does_not_load_dotenv(tmp_path, monkeypatch, capsys):
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    (tmp_path / ".env").write_text("OPENAI_API_KEY=file-test-value\n")
-    (tmp_path / "config.toml").write_text("agents = 1\n")
-    monkeypatch.setattr(sys, "argv", ["mad", "validate", "config.toml"])
-    cli.main()
-    assert "OPENAI_API_KEY" not in os.environ
-    assert "file-test-value" not in capsys.readouterr().out

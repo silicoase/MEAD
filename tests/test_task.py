@@ -98,13 +98,22 @@ async def test_noise_repeats_independently_and_is_seeded_per_agent(tmp_path):
     assert results[0] == results[1]
 
 
-async def test_cancelled_experiment_consumes_budget_and_preserves_event(tmp_path):
+async def test_cancelled_experiment_consumes_budget_and_preserves_event(tmp_path, monkeypatch):
     task, recorder = make_task(
         tmp_path, agents=1, experiment_budget=1, experiment_duration_seconds=10
     )
+    started = asyncio.Event()
+    original_emit = recorder.emit
+
+    def emit(kind, *args, **kwargs):
+        original_emit(kind, *args, **kwargs)
+        if kind == "experiment_started":
+            started.set()
+
+    monkeypatch.setattr(recorder, "emit", emit)
     try:
         pending = asyncio.create_task(task.experiment(0, [0.5] * 8))
-        await asyncio.sleep(0.01)
+        await asyncio.wait_for(started.wait(), timeout=1)
         pending.cancel()
         with pytest.raises(asyncio.CancelledError):
             await pending
