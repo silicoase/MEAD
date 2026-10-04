@@ -1,7 +1,9 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
+from agents.usage import Usage
 
 from mad import experiment
 
@@ -70,7 +72,18 @@ async def test_batch_snapshot_statuses_and_failure_stop(tmp_path, monkeypatch, f
             assert config.task.objective_seed == 45
             assert config.task.noise_seed == 126
             assert config.agents == 1
-        return {"agents": [{"reason": "error" if fail else "submitted", "true_objective": 1}]}
+        # SDK Usage is a dataclass containing Pydantic token-detail objects;
+        # asdict leaves those nested objects intact, as in a real OpenAI rollout.
+        usage = Usage(requests=1, input_tokens=10, output_tokens=5, total_tokens=15)
+        return {
+            "agents": [
+                {
+                    "reason": "error" if fail else "submitted",
+                    "true_objective": 1,
+                    "usage": asdict(usage),
+                }
+            ]
+        }
 
     monkeypatch.setattr(experiment, "run_rollout", rollout)
     monkeypatch.setattr(experiment, "export_review", lambda directory: None)
@@ -86,6 +99,10 @@ async def test_batch_snapshot_statuses_and_failure_stop(tmp_path, monkeypatch, f
     assert [r["status"] for r in manifest["runs"]] == (
         ["error", "error", "pending", "pending"] if fail else ["finished"] * 4
     )
+    usage = manifest["runs"][0]["agents_results"][0]["usage"]
+    assert usage["input_tokens"] == 10
+    assert usage["input_tokens_details"] == {"cached_tokens": 0, "cache_write_tokens": 0}
+    assert usage["output_tokens_details"] == {"reasoning_tokens": 0}
     assert not (output / "inputs/experiment/.env").exists()
     assert (output / "inputs/code/uv.lock").exists()
     recorded = json.loads((output / "checksums.json").read_text())

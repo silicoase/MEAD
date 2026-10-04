@@ -17,7 +17,7 @@ from pathlib import Path
 from pydantic import Field
 
 from .config import StrictModel, load_config
-from .recording import timestamp
+from .recording import json_default, timestamp
 from .review import export_review
 from .rollout import run_rollout
 
@@ -89,7 +89,9 @@ def config_for_run(root: Path, entry: dict):
 def save_json(path: Path, value):
     """Replace manifests atomically so live readers never see half a JSON document."""
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
+    temporary.write_text(
+        json.dumps(value, indent=2, allow_nan=False, default=json_default) + "\n"
+    )
     temporary.replace(path)
 
 
