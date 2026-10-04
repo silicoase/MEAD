@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "measuring-agent-discovery"
 version = "0.1.0"
 description = "Configurable rollouts for measuring emergent agent discovery"
-license = "LicenseRef-Silicoase-Noncommercial-Source-Available-1.0"
+license = "LicenseRef-Silicoase-Noncommercial-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = ["openai-agents>=0.23.1,<0.24", "pydantic>=2.11,<3", "python-dotenv>=1,<2"]

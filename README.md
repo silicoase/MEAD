@@ -18,19 +18,29 @@ for the current choices and limitations.
 ## License
 
 MAD is source-available under the custom
-[Silicoase Noncommercial Source-Available License](LICENSE), not an open-source
-license. Noncommercial use and adaptation are permitted. Commercial use,
-including internal business research and development, requires a separate
-written agreement with Silicoase. Distribution must include corresponding source
-under the same terms; modified versions offered to remote users must also make
-their source available to those users. Private noncommercial modifications may
-remain private when neither distributed nor offered to remote users.
+[Silicoase Noncommercial License, Version 2.0](LICENSE), not an open-source
+license. Noncommercial use and adaptation, including personal hobby projects
+and noncommercial academic research, are permitted. Ordinary salaries, stipends,
+scholarships, and non-industry grants do not by themselves make academic research
+commercial.
 
-Retain copyright and attribution notices. The Silicoase name and logo are
-reserved for the uses described in the license; they do not grant permission to
-brand a fork as an official Silicoase product or imply endorsement. Research
-outputs are not automatically licensed as software merely because MAD generated
-them. Third-party components retain their own licenses.
+Commercial use, use by or on behalf of a for-profit company, industry-sponsored
+research, and paid services (including cost-recovery services) require a separate
+written agreement with Silicoase, Inc. Educational or nonprofit status does not
+automatically exempt those activities.
+
+There is no requirement to publish or provide the source of modifications,
+including when distributing executable copies or operating modified versions
+for remote users. Retain the license and copyright/attribution notices when
+sharing covered material, and identify modifications. The underlying MAD code
+remains subject to its noncommercial restrictions even when included in a fork.
+
+The Silicoase name and logo may not imply endorsement or identify a fork as an
+official release. A modified interface retaining original branding must clearly
+identify itself as modified and unofficial. Research outputs are not automatically
+covered merely because MAD generated them. Exported HTML reports do contain
+covered viewer code and branding: include a copy of LICENSE with reports you
+share and retain legal notices. Third-party components retain their own licenses.
 
 These are custom terms and should receive legal review before public release.
 
