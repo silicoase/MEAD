@@ -15,6 +15,25 @@ runs in a separate container per agent. See [DESIGN.md](DESIGN.md) for the agree
 requirements and design, and [docs/implementation.md](docs/implementation.md)
 for the current choices and limitations.
 
+## License
+
+MAD is source-available under the custom
+[Silicoase Noncommercial Source-Available License](LICENSE), not an open-source
+license. Noncommercial use and adaptation are permitted. Commercial use,
+including internal business research and development, requires a separate
+written agreement with Silicoase. Distribution must include corresponding source
+under the same terms; modified versions offered to remote users must also make
+their source available to those users. Private noncommercial modifications may
+remain private when neither distributed nor offered to remote users.
+
+Retain copyright and attribution notices. The Silicoase name and logo are
+reserved for the uses described in the license; they do not grant permission to
+brand a fork as an official Silicoase product or imply endorsement. Research
+outputs are not automatically licensed as software merely because MAD generated
+them. Third-party components retain their own licenses.
+
+These are custom terms and should receive legal review before public release.
+
 The rollout controller, harness, environment, task, and recorder are separate
 components so others can adapt the tooling. The implemented harnesses are the
 OpenAI Agents SDK and a scripted test harness; the implemented task is synthetic

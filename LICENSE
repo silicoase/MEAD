@@ -1,0 +1,96 @@
+Silicoase Noncommercial Source-Available License, Version 1.0
+Copyright (c) 2026 Silicoase
+
+1. Scope and acceptance
+
+This license applies to Measuring Agent Discovery (MAD) code and documentation
+provided with this license (the "Software"). It does not replace licenses for
+third-party dependencies or material identified as separately licensed. By
+exercising permissions granted here, you agree to these terms. Rights provided
+by applicable law, including fair use, are not restricted by this license.
+
+2. Noncommercial permissions
+
+Subject to these terms, Silicoase grants you a worldwide, royalty-free,
+nonexclusive copyright license to use, copy, study, modify, and distribute the
+Software and modifications of it for noncommercial purposes only.
+
+A noncommercial purpose is one that is neither intended for nor directed toward
+commercial advantage or monetary compensation. Commercial purposes include
+selling or licensing the Software or modifications; providing paid hosting,
+consulting, or other services using them; incorporating them into a commercial
+product or service; and internal business use, research, or development intended
+to support a commercial product, service, or business activity. These uses
+require a separate written agreement with Silicoase, even if the Software is
+not sold or distributed. An organization's nonprofit or educational status
+does not automatically make a particular use noncommercial.
+
+3. Notices and source availability
+
+Every copy you distribute must retain this license and applicable copyright,
+attribution, and other legal notices. Identify modifications and their authors
+without suggesting that Silicoase produced or endorsed those modifications.
+
+If you distribute the Software or modifications, including executable forms,
+you must also provide recipients the complete corresponding source, under
+these same terms, at no additional charge. Corresponding source means the
+preferred form for modification, including the covered code, build scripts,
+and instructions needed to build and run that version. It need not include
+credentials, private experiment data, ordinary system components, or independent
+third-party dependencies available separately under their own licenses.
+
+If you operate a modified version that users interact with remotely over a
+network, you must prominently offer those users the complete corresponding
+source of that version, under these same terms, at no additional charge. The
+offer must remain available while the modified version is offered to users.
+
+You may keep modifications private when used solely for permitted noncommercial
+purposes without distribution or remote user interaction. You may not distribute
+covered code under closed-source terms or omit the source required above. These
+requirements apply to modifications and derivative works of the Software, not
+to independent programs merely used alongside it or communicating through its
+interfaces. Commercial use remains prohibited even when source is provided.
+
+4. Silicoase branding
+
+No permission is granted to use the Silicoase name, logo, or other brand marks
+to brand another product or service, suggest sponsorship or endorsement, or
+represent a modified version as an official Silicoase release. Truthful
+attribution, preservation of existing notices, and display of the original
+branding in an otherwise unmodified MAD interface are permitted. Other uses
+of Silicoase branding require separate written permission. Any trademark
+rights provided by applicable law remain unaffected.
+
+5. Separate agreements and ownership
+
+Commercial use, redistribution without the required source, and other uses
+outside this license require a separate written agreement with Silicoase.
+Silicoase may offer alternative licenses for material it has the right to
+license. All rights not expressly granted here are reserved. No patent license
+is granted by this license. This license does not transfer ownership or grant
+Silicoase ownership of your independently authored modifications.
+
+Experiment data, logs, research findings, and other outputs are not covered
+merely because they were produced using MAD. Portions containing Software code,
+documentation, or branding remain subject to their applicable terms. Producing
+outputs does not exempt an otherwise commercial use from section 2.
+
+6. Termination
+
+Permissions terminate if you violate these terms. For a first violation, they
+are reinstated if you cease the violation and fully cure it within 30 days
+after receiving written notice from Silicoase. Termination does not eliminate
+obligations or liability arising before termination. Recipients who comply
+with this license retain their own permissions.
+
+7. Warranty and liability
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED "AS IS",
+WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT.
+SILICOASE AND CONTRIBUTORS ARE NOT LIABLE FOR DAMAGES OR OTHER LIABILITY ARISING
+FROM THE SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE.
+
+This is a source-available license with noncommercial restrictions, not an
+open-source license. It is a custom license, not a PolyForm, Apache, or GNU
+license.
