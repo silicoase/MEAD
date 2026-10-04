@@ -9,7 +9,7 @@ Some agents share a natural propensity for discovering and collaborating with ot
 
 I develop a simple environment to test these questions, Measuring Agent Discovery (MAD). You can view this environment on [GitHub](https://github.com/silicoase/measuring-agent-discovery). You can view the data underlying this post on [HuggingFace](https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo).
 
-In this MAD pilot, notifying agents of the existence of others working on the same task leads to a noticeable improvement gain. Adding an explicit call for interaction does not further improve performance.
+In this MAD pilot, notifying agents of the existence of others working on the same task leads to a noticeable improvement in task performance. Adding an explicit call for interaction does not further improve performance.
 
 # Piloting MAD
 
