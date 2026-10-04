@@ -1,0 +1,1 @@
+Keep a research notebook in /lab/notes. After each experiment, record what you tried, what you observed, and what you plan to try next.

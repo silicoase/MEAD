@@ -1,0 +1,20 @@
+agents = 3
+experiment_budget = 8
+max_turns = 40
+timeout_seconds = 600
+runs_visibility = "all"
+notes_visibility = "all"
+experiment_duration_seconds = 15.0
+
+[harness]
+kind = "openai"
+# Explicit and replaceable; availability depends on your API account.
+model = "gpt-4.1-mini"
+
+[task]
+instructions_file = "notebook-instructions.txt"
+kind = "synthetic"
+dimensions = 8
+objective_seed = 42
+noise_seed = 123
+noise_std = 0.1

@@ -1,0 +1,18 @@
+agents = 3
+experiment_budget = 4
+max_turns = 40
+timeout_seconds = 300
+runs_visibility = "all"
+notes_visibility = "all"
+start_offsets_seconds = [0, 0, 0]
+experiment_duration_seconds = 0.1
+
+[harness]
+kind = "scripted"
+
+[task]
+kind = "synthetic"
+dimensions = 8
+objective_seed = 42
+noise_seed = 123
+noise_std = 0.1
