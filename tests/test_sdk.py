@@ -64,6 +64,9 @@ async def test_real_sdk_loop_retries_invalid_submission_and_stops_on_success(tmp
     task = OptimizationTask(config, Publisher(config), recorder)
     service = ToolService(task, Publisher(config), recorder, 1)
     model = FakeModel()
+    # Host-only review data must not be forwarded into the SDK's agent context.
+    private_reference = {"estimated_maximum": 987654321.125, "reviewer_note": "review-only-canary"}
+    (tmp_path / "objective_reference.json").write_text(json.dumps(private_reference))
     try:
         harness = OpenAIHarness(config, service, recorder, model=model)
         result = await harness.run(0, task.instructions(1))
@@ -77,6 +80,11 @@ async def test_real_sdk_loop_retries_invalid_submission_and_stops_on_success(tmp
         events = [json.loads(line) for line in (tmp_path / "events.jsonl").read_text().splitlines()]
         assert sum(e["kind"] == "model_request" for e in events) == 3
         assert sum(e["kind"] == "model_response" for e in events) == 3
+        agent_context = json.dumps([
+            e for e in events if e["kind"] in ("model_request", "agent_interface")
+        ])
+        assert "review-only-canary" not in agent_context
+        assert str(private_reference["estimated_maximum"]) not in agent_context
         assert all(
             e["output"][0]["summary"][0]["text"] == "Choosing the next tool."
             for e in events
@@ -101,12 +109,22 @@ async def test_tool_selection_is_enforced_in_adapter_and_dispatch(tmp_path):
         recorder.close()
 
 
-async def test_wait_allows_other_agents_and_is_cancelled_by_session_timeout(tmp_path):
+async def test_wait_allows_other_agents_and_is_cancelled_by_session_timeout(tmp_path, monkeypatch):
     config = RolloutConfig(agents=2)
     recorder = Recorder(tmp_path)
     environment = Publisher(config)
     task = OptimizationTask(config, environment, recorder)
     service = ToolService(task, environment, recorder, 2)
+
+    started = asyncio.Event()
+    original_emit = recorder.emit
+
+    def emit(kind, *args, **kwargs):
+        original_emit(kind, *args, **kwargs)
+        if kind == "tool_called" and kwargs.get("tool") == "wait" and args == (0,):
+            started.set()
+
+    monkeypatch.setattr(recorder, "emit", emit)
 
     async def waiting_session():
         async with asyncio.timeout(0.05):
@@ -115,7 +133,7 @@ async def test_wait_allows_other_agents_and_is_cancelled_by_session_timeout(tmp_
     try:
         assert "wait" in [tool.name for tool in sdk_tools(service, 0)]
         waiting = asyncio.create_task(waiting_session())
-        await asyncio.sleep(0)
+        await asyncio.wait_for(started.wait(), timeout=1)
         other = await service.call(1, "wait", seconds=0)
         assert other["requested_seconds"] == 0
         assert other["actual_seconds"] >= 0

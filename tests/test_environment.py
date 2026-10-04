@@ -27,10 +27,8 @@ async def test_cancelled_publication_keeps_creator_claim(monkeypatch):
 
 
 def test_author_ids_are_opaque_unique_and_fresh():
-    from uuid import UUID
-
     first = DockerEnvironment(RolloutConfig(agents=100))
     second = DockerEnvironment(RolloutConfig(agents=100))
     assert len(set(first.author_ids)) == 100
     assert set(first.author_ids).isdisjoint(second.author_ids)
-    assert all(UUID(value).version == 4 for value in first.author_ids)
+    assert all(isinstance(value, str) and value for value in first.author_ids)

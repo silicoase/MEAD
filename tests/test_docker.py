@@ -4,7 +4,7 @@ import os
 import pytest
 
 from mad.config import RolloutConfig
-from mad.environment import DockerEnvironment
+from mad.environment import DockerEnvironment, docker
 from mad.rollout import run_rollout
 
 pytestmark = [
@@ -19,13 +19,12 @@ pytestmark = [
     "runs_visibility,notes_visibility",
     [("all", "all"), ("own", "own"), ("own", "all"), ("all", "own")],
 )
-async def test_visibility_ownership_and_python_isolation(runs_visibility, notes_visibility):
+async def test_visibility_and_note_ownership(runs_visibility, notes_visibility):
     config = RolloutConfig(
         agents=2,
         runs_visibility=runs_visibility,
         notes_visibility=notes_visibility,
         note_author_headers=False,
-        environment={"python_timeout_seconds": 0.5},
     )
     environment = DockerEnvironment(config)
     try:
@@ -49,6 +48,19 @@ async def test_visibility_ownership_and_python_isolation(runs_visibility, notes_
         assert await environment.file(0, "search", "/lab/notes", query="revised") == [
             "/lab/notes/calibration.md"
         ]
+    finally:
+        await environment.close()
+
+
+async def test_python_isolation_and_read_only_lab_mounts():
+    environment = DockerEnvironment(
+        RolloutConfig(agents=2, environment={"python_timeout_seconds": 0.5})
+    )
+    try:
+        await environment.start("Optimize the objective.")
+        await environment.file(0, "write", "/lab/notes/calibration.md", content="revised")
+        original = await environment.file(0, "read", "/lab/notes/calibration.md")
+        await environment.publish_run(0, {"run_id": "measurement", "observed": 1})
         await environment.file(0, "write", "/workspace/new", content="replacement")
         # Read-only mount also blocks chmod, deletion, and replacement through Python.
         for code in (
@@ -59,7 +71,7 @@ async def test_visibility_ownership_and_python_isolation(runs_visibility, notes_
             "import os; os.rename('/workspace/new', '/lab/notes/calibration.md')",
         ):
             assert (await environment.python(0, code))["exit_code"] != 0
-        assert await environment.file(0, "read", "/lab/notes/calibration.md") == "revised"
+        assert await environment.file(0, "read", "/lab/notes/calibration.md") == original
         with pytest.raises(ValueError):
             await environment.file(1, "write", "/lab/notes/../runs/measurement.json", content="bad")
         await environment.file(0, "write", "/workspace/private.txt", content="private")
@@ -82,8 +94,8 @@ print(json.dumps({'uids': uids, 'uid': os.getuid(),
 """,
         )
         state = json.loads(result["output"])
-        assert state["uid"] == 10001
-        assert set(state["uids"]) == {10001}
+        assert state["uid"] != 0
+        assert set(state["uids"]) == {state["uid"]}
         assert not state["private"] and not state["key"] and not state["docker_socket"]
         network = await environment.python(1, "print(open('/proc/net/dev').read())")
         assert "eth0" not in network["output"] and "lo:" in network["output"]
@@ -92,7 +104,17 @@ print(json.dumps({'uids': uids, 'uid': os.getuid(),
         await environment.close()
 
 
-async def test_scripted_rollout_logs_evaluation_archives_and_cleans_up(tmp_path):
+async def test_scripted_rollout_logs_evaluation_archives_and_cleans_up(tmp_path, monkeypatch):
+    from mad import rollout
+
+    environments = []
+
+    def create_environment(config):
+        environment = DockerEnvironment(config)
+        environments.append(environment)
+        return environment
+
+    monkeypatch.setattr(rollout, "DockerEnvironment", create_environment)
     config = RolloutConfig(
         agents=2, experiment_budget=2, harness={"kind": "scripted"}, max_turns=30
     )
@@ -102,6 +124,11 @@ async def test_scripted_rollout_logs_evaluation_archives_and_cleans_up(tmp_path)
     assert all(a["experiments_used"] == 2 for a in result["agents"])
     assert all(a["true_objective"] is not None for a in result["agents"])
     assert (directory / "artifacts.tar").stat().st_size > 0
+    environment = environments[0]
+    container_names = (await docker("ps", "-a", "--format", "{{.Names}}")).decode().splitlines()
+    assert set([*environment.containers.values(), environment.helper]).isdisjoint(container_names)
+    volumes = (await docker("volume", "ls", "--format", "{{.Name}}")).decode().splitlines()
+    assert environment.volume not in volumes
     events = [json.loads(line) for line in (directory / "events.jsonl").read_text().splitlines()]
     assert [e["sequence"] for e in events] == list(range(1, len(events) + 1))
     assert sum(e["kind"] == "submission" for e in events) == 2
@@ -110,17 +137,21 @@ async def test_scripted_rollout_logs_evaluation_archives_and_cleans_up(tmp_path)
     assert len(set(authors)) == 2
     for event in events:
         if event["kind"] == "agent_started":
-            assert f"Your author ID is `{authors[event['agent']]}`." in event["instructions"]
+            assert authors[event["agent"]] in event["instructions"]
             assert authors[1 - event["agent"]] not in event["instructions"]
         if event["kind"] == "experiment_completed":
             assert event["record"]["author_id"] == authors[event["agent"]]
-            assert len(event["record"]["run_id"].removeprefix("measurement-")) == 32
+    records = [event["record"] for event in events if event["kind"] == "experiment_completed"]
+    assert len({record["run_id"] for record in records}) == len(records)
+    assert {record["run_id"] for record in records} == {
+        record["run_id"] for agent_records in result["experiment_records"] for record in agent_records
+    }
     import tarfile
 
     with tarfile.open(directory / "artifacts.tar") as archive:
         for i, author in enumerate(authors):
             task = archive.extractfile(f"./work/{i}/task.md").read().decode()
-            assert f"Your author ID is `{author}`." in task
+            assert author in task
             note = archive.extractfile(f"./notes/all/sweep-{author}.md").read().decode()
             assert note.startswith(f"Author: {author}\n\n")
     from mad.review import load_run

@@ -5,14 +5,14 @@ working AI agents discover one another through task artifacts and develop
 coordination without being instructed to do so.
 
 The current task gives agents the same synthetic optimization problem,
-independent noisy measurements, and individual experiment budgets. Agents will
+independent noisy measurements, and individual experiment budgets. Agents
 have private workspaces and access to a common lab containing experiment records
 and voluntary notes.
 
-The first implementation runs locally with Docker, including Docker Desktop on
+MAD runs locally with Docker, including Docker Desktop on
 macOS. Python and the OpenAI Agents SDK run on the host; agent-generated Python
-runs in a separate container per agent. See [DESIGN.md](DESIGN.md) for the agreed
-requirements and design, and [docs/implementation.md](docs/implementation.md)
+runs in a separate container per agent. See [DESIGN.md](DESIGN.md) for the
+architecture and experiment setup, and [docs/implementation.md](docs/implementation.md)
 for the current choices and limitations.
 
 ## License
@@ -42,7 +42,7 @@ covered merely because MAD generated them. Exported HTML reports do contain
 covered viewer code and branding: include a copy of LICENSE with reports you
 share and retain legal notices. Third-party components retain their own licenses.
 
-These are custom terms and should receive legal review before public release.
+See [licensing notes](docs/licensing.md) for scope, provenance, and legal review considerations.
 
 The rollout controller, harness, environment, task, and recorder are separate
 components so others can adapt the tooling. The implemented harnesses are the
@@ -255,8 +255,8 @@ first/latest/peak input sizes, output and cached-input counts, and cumulative
 input usage. Cumulative input is repeated token processing across calls, not the
 context size of a single call. No model context limit is assumed.
 
-New OpenAI rollouts record the exact available tool definitions in an
-`agent_interface` event. Older runs retain their recorded system prompts but
+OpenAI rollouts record available tool definitions in an
+`agent_interface` event. Runs without that event retain their recorded system prompts but
 show explicitly labeled tool definitions from the current MAD version unless
 their original definitions have been recovered. Where stored OpenAI responses
 remain available, retrieve their initial tool definitions with:
@@ -288,3 +288,6 @@ Docker tests require the sandbox image to have been built. They exercise both
 visibility settings, ownership enforcement, direct-Python restrictions, process
 and network isolation, timeouts, and complete scripted rollouts. The SDK loop
 test uses a fake model, avoiding network calls and charges.
+
+Documentation describes current interfaces, defaults, and operational limits.
+Record change history in commits and pull requests.
