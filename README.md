@@ -85,7 +85,7 @@ uv run mad run examples/openai-sol-notes-delay.toml
 ```
 
 For periodic lab checks, timestamped notes, provider reasoning summaries,
-12 experiments per agent, a 30-minute per-agent timeout, and simultaneous starts:
+10 experiments per agent, a 30-minute per-agent timeout, and simultaneous starts:
 
 ```sh
 uv run mad run examples/openai-sol-periodic.toml
