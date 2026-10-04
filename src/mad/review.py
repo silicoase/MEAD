@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 from .config import RolloutConfig
 from .harness import sdk_tools
+from .objective_reference import objective_reference
 from .recording import timestamp, write_json
 
 
@@ -235,6 +236,7 @@ def load_run(directory: Path) -> dict:
         "notices": notices,
         "flags": collaboration_flags(events, summary, ownership),
         "context": context_growth(events),
+        "objective_reference": read_json(directory / "objective_reference.json"),
     }
 
 
@@ -323,6 +325,17 @@ def recover_interfaces(directory: Path, client=None) -> dict:
 
 def export_review(directory: Path, destination: Path | None = None) -> Path:
     data = load_run(directory)
+    task = RolloutConfig.model_validate(data["config"]).task
+    reference = data["objective_reference"]
+    if (
+        not reference
+        or reference.get("task") != task.model_dump(mode="json")
+        or reference.get("method")
+        != "Synthetic objective v1: Taylor branch-and-bound (floating-point estimate)"
+    ):
+        reference = objective_reference(task)
+        write_json(directory / "objective_reference.json", reference)
+    data["objective_reference"] = reference
     destination = destination or directory / "review.html"
     # Escape HTML parser delimiters even inside a non-executable JSON script.
     payload = json.dumps(data, ensure_ascii=True, allow_nan=False).replace("<", "\\u003c")

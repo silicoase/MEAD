@@ -56,6 +56,7 @@ async def main():
                     export_review(directory)
                     data = load_run(directory)
                     entry["flags"] = data["flags"]
+                    entry["objective_reference"] = data["objective_reference"]
                 write_json(root / "manifest.json", dict(concurrent_runs=3, runs=entries))
                 print(
                     f"Finished {condition}, repetition {repetition}: {entry['status']}", flush=True
@@ -66,6 +67,7 @@ async def main():
     for entry in sorted(entries, key=lambda e: (e["repetition"], e["condition"])):
         agents = entry.get("agents", [])
         scores = [a["true_objective"] for a in agents if a.get("true_objective") is not None]
+        maximum = (entry.get("objective_reference") or {}).get("estimated_maximum")
         cells = [
             str(entry["repetition"]),
             entry["condition"],
@@ -73,6 +75,8 @@ async def main():
             f"{sum(a['reason'] == 'submitted' for a in agents)}/4",
             f"{statistics.mean(scores):.4f}" if scores else "—",
             f"{max(scores):.4f}" if scores else "—",
+            f"{maximum:.4f}" if maximum is not None else "—",
+            f"{maximum - max(scores):.4f}" if maximum is not None and scores else "—",
             str(len(entry.get("flags", []))),
         ]
         rows.append(
@@ -87,7 +91,7 @@ async def main():
 <style>body{{background:#18181b;color:#f7f6f0;font:14px/1.6 system-ui;margin:32px}}
 a{{color:#b3e2f4}}table{{border-collapse:collapse}}td,th{{padding:12px;border-bottom:1px solid #353e43;text-align:left}}h1{{font-size:16px}}</style></head>
 <body><h1>{title}</h1><p>{settings.agents} agents per run, {settings.experiment_budget} experiments each. Start offsets: {offsets} seconds. Session timeout: {settings.timeout_seconds / 60:g} minutes.</p>
-<table><thead><tr>{"".join("<th>" + h + "</th>" for h in ["Repetition", "Condition", "Status", "Submitted", "Mean score", "Best score", "Flags", "Explorer"])}</tr></thead>
+<table><thead><tr>{"".join("<th>" + h + "</th>" for h in ["Repetition", "Condition", "Status", "Submitted", "Mean score", "Best score", "Estimated maximum", "Gap from best", "Flags", "Explorer"])}</tr></thead>
 <tbody>{"".join(rows)}</tbody></table></body></html>"""
     (root / "index.html").write_text(page)
     print(f"Pilot explorer: {(root / 'index.html').resolve()}", flush=True)

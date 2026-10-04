@@ -100,6 +100,15 @@ validation, and image-building commands do not.
 
 ## Configuration
 
+The explorer reports an estimated maximum score for the synthetic task and each
+agent's final-score gap to that estimate. Review export computes this reference
+locally without model calls and caches it in `objective_reference.json`. It uses
+the current synthetic objective v1 implementation and the saved task config.
+The reference is reviewer-only and is never added to agent prompts or lab files.
+The accompanying floating-point upper bound quantifies numerical uncertainty;
+it is not a formal interval-arithmetic proof. Compare final scores, rather than
+noisy observations, to assess room for improvement.
+
 Configs use TOML. Validate without launching containers or calling a model:
 
 ```sh
