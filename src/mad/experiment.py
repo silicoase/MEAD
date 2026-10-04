@@ -25,11 +25,12 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 
 
 class ExperimentConfig(StrictModel):
-    schema_version: int = Field(default=1, ge=1, le=1)
+    schema_version: int = Field(default=2, ge=2, le=2)
     name: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
     conditions: list[str]
     repetitions: int = Field(ge=1)
-    config_pattern: str
+    config_file: str
+    prompts: dict[str, str]
     concurrent_runs: int = Field(ge=1)
     objective_seed_start: int
     noise_seed_start: int
@@ -43,43 +44,46 @@ def validate_experiment(path: Path) -> dict:
         raise ValueError("condition names must be alphanumeric with optional hyphens")
     if spec.concurrent_runs != len(spec.conditions):
         raise ValueError("concurrent_runs must equal the number of matched conditions")
+    if set(spec.prompts) != set(spec.conditions):
+        raise ValueError("provide exactly one prompt file for each condition")
+    config_path = (path.parent / spec.config_file).resolve()
+    if not config_path.is_relative_to(path.parent.resolve()):
+        raise ValueError("config path must stay inside the experiment directory")
+    config = load_config(config_path)
+    if config.task.instructions_file:
+        raise ValueError("set condition instructions in the experiment prompts mapping")
+    for source in config.task.initial_files.values():
+        if not source.is_file() or not source.is_relative_to(path.parent.resolve()):
+            raise ValueError("initial files must be within the experiment directory")
     entries = []
     for repetition in range(1, spec.repetitions + 1):
-        baseline = None
         for condition in spec.conditions:
-            relative = spec.config_pattern.format(condition=condition, repetition=repetition)
-            config_path = (path.parent / relative).resolve()
-            if not config_path.is_relative_to(path.parent.resolve()):
-                raise ValueError("config paths must stay inside the experiment directory")
-            config = load_config(config_path)
-            if (config.task.objective_seed, config.task.noise_seed) != (
-                spec.objective_seed_start + repetition - 1,
-                spec.noise_seed_start + repetition - 1,
-            ):
-                raise ValueError(f"unexpected seed pair: {relative}")
-            sources = [config.task.instructions_file, *config.task.initial_files.values()]
-            for source in filter(None, sources):
-                if not source.is_file() or not source.is_relative_to(path.parent.resolve()):
-                    raise ValueError(f"input sources must be files within the experiment: {source}")
-            comparable = config.model_dump(mode="json")
-            comparable["task"].pop("instructions_file")
-            if baseline is not None and comparable != baseline:
-                raise ValueError(f"unmatched settings in repetition {repetition}: {condition}")
-            baseline = comparable
+            prompt_path = (path.parent / spec.prompts[condition]).resolve()
+            if not prompt_path.is_file() or not prompt_path.is_relative_to(path.parent.resolve()):
+                raise ValueError("prompt files must be within the experiment directory")
             entries.append(
                 dict(
                     run_id=f"{condition}-{repetition:03d}",
                     condition=condition,
                     repetition=repetition,
-                    config=relative,
-                    objective_seed=config.task.objective_seed,
-                    noise_seed=config.task.noise_seed,
+                    config=spec.config_file,
+                    prompt=spec.prompts[condition],
+                    objective_seed=spec.objective_seed_start + repetition - 1,
+                    noise_seed=spec.noise_seed_start + repetition - 1,
                     agents=config.agents,
                     experiment_budget=config.experiment_budget,
                     status="pending",
                 )
             )
     return dict(**spec.model_dump(), runs=entries)
+
+
+def config_for_run(root: Path, entry: dict):
+    config = load_config(root / entry["config"])
+    config.task.objective_seed = entry["objective_seed"]
+    config.task.noise_seed = entry["noise_seed"]
+    config.task.instructions_file = (root / entry["prompt"]).resolve()
+    return config
 
 
 def save_json(path: Path, value):
@@ -119,6 +123,7 @@ def snapshot_inputs(experiment: Path, root: Path) -> dict:
     definition.mkdir()
     sources = {experiment.resolve()}
     for entry in validate_experiment(experiment)["runs"]:
+        sources.add((experiment.parent / entry["prompt"]).resolve())
         config_path = (experiment.parent / entry["config"]).resolve()
         sources.add(config_path)
         config = load_config(config_path)
@@ -242,7 +247,7 @@ async def run_experiment(experiment: Path, output: Path | None = None) -> Path:
         update()
         print(f"Starting {entry['run_id']}", flush=True)
         try:
-            config = load_config(snapshot.parent / entry["config"])
+            config = config_for_run(snapshot.parent, entry)
             summary = await run_rollout(config, directory)
             entry["agents_results"] = summary["agents"]
             reasons = [a["reason"] for a in summary["agents"]]

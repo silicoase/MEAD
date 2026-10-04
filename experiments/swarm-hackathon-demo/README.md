@@ -1,102 +1,48 @@
 # swarm-hackathon-demo
 
-Twenty matched repetitions of control, aware, and interact: 60 rollouts,
-240 agent sessions, and at most 2,400 accepted measurements. This follows the
-four-agent pilot configuration; the pilot configs and outputs remain separate.
+A hackathon demo with 20 matched repetitions of control, aware, and interact:
+60 runs, four agents per run, and up to 2,400 accepted measurements.
 
-## Design fixed before launch
+| File | Purpose |
+| --- | --- |
+| `config.toml` | Shared model, task, budget, timing, and environment settings. |
+| `experiment.toml` | Conditions, repetitions, prompt paths, and seed schedule. |
+| `prompts/` | Three condition prompts copied from the pilot. |
+| `DATASET_CARD.md` | Hugging Face documentation draft. |
 
-Each rollout uses four GPT-6.1 Sol agents, 10 experiments per agent, 80 model
-turns, a 1,800-second timeout per agent, 15-second measurement delays, and
-simultaneous starts. Both lab directories are visible to all agents. Note author
-headers, timestamps, and provider reasoning summaries (`auto`) are enabled.
-The synthetic task has eight dimensions, bounds [0, 1], and noise SD 0.1.
-The Docker resource defaults and enabled tools are resolved into each config.json.
+The common setup uses GPT-6.1 Sol, 10 measurements per agent, 80 turns,
+30-minute per-agent timeouts, 15-second measurement delays, shared lab records
+and notes, and simultaneous starts. Note timestamps and reasoning summaries
+are enabled. The task has eight dimensions, [0,1] bounds, and noise SD 0.1.
+Control asks for notebook writing and periodic lab checks. Aware adds explicit
+peer awareness; interact additionally permits interaction.
 
-The prompts are copied verbatim from the pilot:
+Repetition r uses objective seed 43+r and noise seed 124+r (44–63 / 125–144).
+The runner derives these seeds from the manifest and saves each resolved config.
+The three conditions run concurrently in isolated labs; repetitions run sequentially.
+UUIDs, model outputs, and execution timing are not matched. API/infrastructure
+errors stop later repetitions; there are no automatic whole-run retries.
 
-- **control:** notebook writing and periodic lab checks.
-- **aware:** control plus “Other agents are actively working on this task.”
-- **interact:** control plus “Other agents are actively working on this task.
-  You can interact with them as you see fit.”
-
-Repetition r (1–20) uses objective seed 43+r and noise seed 124+r, i.e.
-44–63 and 125–144. These do not reuse the pilot pairs (42,123) and (43,124).
-All non-prompt settings match across conditions within each repetition.
-Noise streams match by internal agent index; random author UUIDs, stochastic
-model outputs, and scheduling are not matched. There is no fixed provider
-sampling seed or guaranteed model-version pinning.
-
-All three conditions in a repetition launch concurrently in isolated Docker
-storage (12 agents total). Repetitions run sequentially in ascending order.
-API/infrastructure errors stop subsequent repetitions after the current trio
-finishes. Time/turn limits and absent submissions are outcomes, not reasons to
-rerun. No automatic retries of whole rollouts or resume behavior are implemented;
-a new invocation creates a separate batch. Preserve failed batches and disclose
-any follow-up runs rather than silently replacing failures.
-
-## Run
-
-From the repository root:
+From the repository root, with Docker running and an API key in .env or the shell:
 
 ```sh
-uv run mad batch experiments/swarm-hackathon-demo/experiment.toml --dry-run
-uv run mad batch experiments/swarm-hackathon-demo/experiment.toml
+uv sync --locked
+uv run --locked mad build
+uv run --locked mad batch experiments/swarm-hackathon-demo/experiment.toml --dry-run
+uv run --locked mad batch experiments/swarm-hackathon-demo/experiment.toml
 ```
 
-Docker must be running with the `mad-python:local` image built (`uv run mad build`).
-The batch command loads the root .env without overriding shell variables.
-The dry run makes no model calls and does not load credentials.
-A complete batch has up to ten hours of per-agent timeout windows plus overhead;
-actual runtime depends on agent behavior. Model API charges apply.
+Dry-run validation makes no model calls. Launching incurs API charges.
 
-## Storage and provenance
+Results land in `outputs/swarm-hackathon-demo/<UTC-timestamp>-<id>/`.
+All outputs are Git-ignored. The batch contains manifest.json, index.html,
+frozen config/prompt/source inputs, dependency versions, commit/dirty status,
+and SHA-256 checksums. Each run saves its resolved config, timestamps, events,
+runtime/image metadata, outcomes, identities, final artifacts, and HTML explorer.
+Credentials are excluded from input snapshots.
 
-Definitions and prompts under experiments/ belong in Git. All of outputs/ is
-ignored; back up completed and failed batches separately.
-
-Default destination: outputs/swarm-hackathon-demo/<UTC-timestamp>-<random-id>/.
-Use --output for a new custom batch directory; existing paths are never overwritten.
-
-- manifest.json: all 60 planned entries, condition/repetition, seeds, statuses,
-  start/end UTC timestamps, results, commit, dirty-tree indicator, installed
-  package versions, matching rules, and snapshot references.
-- inputs/experiment/: frozen experiment configs, prompts, protocol, and card.
-  Rollouts execute these saved configs, not mutable originals.
-- inputs/code/: working source, Docker build definition, runner scripts, dependency
-  lockfile, project metadata, code license, and core documentation.
-- inputs/checksums.json: SHA-256 input fingerprints; these cover dirty/uncommitted
-  changes as well as committed source.
-- <condition>-<repetition>/: standard MAD outputs plus run_metadata.json,
-  review.html, and checksums.json.
-- index.html: live batch overview; final checksums.json covers batch files.
-- README.md: publication draft copied from DATASET_CARD.md.
-- LICENSE: code/viewer license, not an assigned license for generated research data.
-
-Runtime records identify the actual Docker image ID. Prompt/tool events, API
-response metadata and available token usage remain in events.jsonl. Model
-provider sampling and alias changes limit exact reproducibility. Credentials
-and .env files are excluded from snapshots; generated logs should still be
-reviewed before publication.
-
-## Analysis and Hugging Face release
-
-Compare conditions within matched repetitions; agents share a lab, so 240 agent
-sessions are not 240 independent repetitions. Report submission/termination rates
-alongside scores. Missing final scores remain null; do not replace them with zero
-or quietly drop failed sessions. Means in the HTML overview describe submitted
-agents only. Estimated objective maxima are reviewer-only numerical references.
-Peer-read flags are navigation aids, not validated labels for collaboration;
-Python filesystem reads are not individually traced.
-
-Capture provenance now; build the Hugging Face packaging/upload utility after
-collection. It should produce machine-readable run/agent tables linked to raw
-traces and artifacts, preserve null outcomes and failures, verify checksums,
-review/redact local paths or sensitive generated content in a separate release
-copy, and update the dataset card with actual counts, dates, limitations,
-analysis schema, citation, authors, and the chosen dataset license. Record any
-redactions with release-specific checksums. Do not upload credentials.
-
-The generated research data license must be selected before publication; it is
-not automatically the MAD code license. Included source and HTML viewers retain
-the Silicoase Noncommercial License and notices. No upload occurs in this runner.
+For Hugging Face, finalize the dataset card with actual collection dates/counts,
+file schemas, authors/citation, and the chosen generated-data license. Verify
+checksums and review the release files for credentials or private host details.
+Included MAD source and HTML viewers retain their code license and notices.
+The upload utility is deferred until the results are available.

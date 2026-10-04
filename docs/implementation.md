@@ -86,6 +86,10 @@ SDK hooks retain completed model requests/responses and per-response usage,
 including completed calls before turn/time limits. In-flight incomplete model
 responses are not streamed or preserved. Hidden model reasoning is not available.
 
+Request events include SDK model settings; null values leave defaults unspecified.
+The Responses adapter also records provider-returned model/settings metadata and
+request IDs before SDK normalization, linked to model outputs by response ID.
+
 The explorer derives per-call context growth from reported input-token usage and
 matches response usage with request-start times where available. Cached tokens
 remain part of the input count. Cumulative input is displayed separately as
@@ -115,19 +119,6 @@ symlinks. Hosts need Docker and `uv`; no VM provisioning or cloud deployment is
 implemented. The host dependency lockfile pins the tested SDK environment. The
 Docker image ID is recorded because rebuilding its base image or libraries may
 change the runtime.
-
-## Remaining work
-
-- Inspect additional live rollouts and validate the review workflow.
-- Extend the offline HTML viewer with artifact history where recorded, richer
-  comparisons, and indicators of potential division of work. Initial flags
-  cover peer-artifact reads, filename references, and matching submissions;
-  they link to evidence and do not assert collaboration or intent.
-- Decide whether finer-grained Python filesystem tracing is necessary.
-- Add cross-agent/near-duplicate analysis and explicit artifact-access attribution.
-- Add storage quotas and recovery/cleanup for hard-killed controllers.
-- Validate task difficulty and experimental timing before making scientific claims.
-- Extend model settings, task adapters, and harness adapters as experiments need them.
 
 Optional `note_timestamps` adds UTC `Created` and `Updated` metadata and timestamps
 each append entry. Replacement preserves creation time. Metadata counts toward

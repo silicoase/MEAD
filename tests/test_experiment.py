@@ -11,6 +11,7 @@ SPEC = Path(__file__).resolve().parents[1] / "experiments/swarm-hackathon-demo/e
 def test_real_experiment_is_matched_and_uses_fresh_seeds():
     plan = experiment.validate_experiment(SPEC)
     assert len(plan["runs"]) == 60
+    assert len({r["config"] for r in plan["runs"]}) == 1
     assert sum(run["agents"] for run in plan["runs"]) == 240
     for repetition in range(1, 21):
         trio = [r for r in plan["runs"] if r["repetition"] == repetition]
@@ -23,28 +24,27 @@ def make_spec(tmp_path):
     (tmp_path / "experiment.toml").write_text("""name = "test-batch"
 conditions = ["control", "aware"]
 repetitions = 2
-config_pattern = "{condition}-{repetition:03d}.toml"
+config_file = "config.toml"
 concurrent_runs = 2
 objective_seed_start = 44
 noise_seed_start = 125
+[prompts]
+control = "control.txt"
+aware = "aware.txt"
 """)
-    for r in (1, 2):
-        for c in ("control", "aware"):
-            (tmp_path / f"{c}-{r:03d}.toml").write_text(f"""agents = 1
+    (tmp_path / "config.toml").write_text("""agents = 1
 [harness]
 kind = "scripted"
-[task]
-objective_seed = {43 + r}
-noise_seed = {124 + r}
 """)
+    for c in ("control", "aware"):
+        (tmp_path / f"{c}.txt").write_text(c)
     return tmp_path / "experiment.toml"
 
 
-def test_rejects_unmatched_settings(tmp_path):
+def test_rejects_missing_condition_prompt(tmp_path):
     path = make_spec(tmp_path)
-    config = tmp_path / "aware-001.toml"
-    config.write_text(config.read_text().replace("agents = 1", "agents = 2"))
-    with pytest.raises(ValueError, match="unmatched settings"):
+    (tmp_path / "aware.txt").unlink()
+    with pytest.raises(ValueError, match="prompt files"):
         experiment.validate_experiment(path)
 
 
@@ -61,14 +61,15 @@ async def test_batch_snapshot_statuses_and_failure_stop(tmp_path, monkeypatch, f
         directory.mkdir()
         (directory / "config.json").write_text("{}")
         calls.append(directory.name)
+        assert config.task.instructions_file.read_text() == directory.name.split("-")[0]
         # Editing the original during wave one must not change later configs.
         if directory.name == "control-001":
-            original = inputs / "control-002.toml"
-            original.write_text(
-                original.read_text().replace("objective_seed = 45", "objective_seed = 999")
-            )
+            original = inputs / "config.toml"
+            original.write_text(original.read_text().replace("agents = 1", "agents = 2"))
         if directory.name == "control-002":
             assert config.task.objective_seed == 45
+            assert config.task.noise_seed == 126
+            assert config.agents == 1
         return {"agents": [{"reason": "error" if fail else "submitted", "true_objective": 1}]}
 
     monkeypatch.setattr(experiment, "run_rollout", rollout)

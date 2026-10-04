@@ -1,6 +1,6 @@
 # Four-agent interaction pilot
 
-Run with `.venv/bin/python scripts/run_pilot.py` from the repository root.
+Run with `uv run --locked python scripts/run_pilot.py` from the repository root.
 The script creates a new pilot directory and exports each run plus an overview.
 
 Each run uses four GPT-6.1 Sol agents, 10 experiments per agent, 15-second

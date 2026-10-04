@@ -1,8 +1,13 @@
-schema_version = 1
+schema_version = 2
 name = "swarm-hackathon-demo"
 conditions = ["control", "aware", "interact"]
 repetitions = 20
-config_pattern = "configs/{condition}-{repetition:03d}.toml"
+config_file = "config.toml"
 concurrent_runs = 3
 objective_seed_start = 44
 noise_seed_start = 125
+
+[prompts]
+control = "prompts/control.txt"
+aware = "prompts/aware.txt"
+interact = "prompts/interact.txt"
