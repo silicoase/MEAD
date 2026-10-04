@@ -1,0 +1,200 @@
+Silicoase Noncommercial License, Version 2.0
+Required Notice: Copyright (c) 2026 Silicoase, Inc.
+
+Acceptance
+
+In order to get any license under these terms, you must agree to them as both
+strict obligations and conditions to all your licenses.
+
+Scope and definitions
+
+The licensor is Silicoase, Inc. The software is Measuring Agent Discovery (MAD)
+code, documentation, and embedded assets provided under these terms. These
+terms do not replace licenses for third-party dependencies or material
+identified as separately licensed.
+
+You refers to the individual or entity agreeing to these terms. A contributor
+is a person or entity that holds copyright in modifications or new works based
+on the software and distributes them under these terms. Each contributor is a
+licensor only for its own contributions and only to the extent of its authority.
+
+Your company is any legal entity, sole proprietorship, or other organization
+that you work for, plus all organizations that control, are controlled by, or
+are under common control with that organization. Control means ownership of
+substantially all the assets of an entity, or the power to direct its management
+and policies by vote, contract, or otherwise. Control can be direct or indirect.
+
+Your licenses are all the licenses granted to you under these terms. Use means
+anything you do with the software requiring one of your licenses.
+
+Copyright license
+
+The licensor and each contributor grant you a copyright license for the
+software, to the extent of their respective rights, to do everything you might
+do with it that would otherwise infringe those rights, for any permitted
+purpose. However, you may only distribute the software according to Distribution
+and make changes or new works based on it according to Changes and new works.
+
+Distribution
+
+The licensor and each contributor grant you an additional copyright license
+to distribute copies of the software for any permitted purpose. Your license
+to distribute covers distributing the software with changes and new works
+permitted by Changes and new works.
+
+Notices
+
+You must ensure that anyone who gets a copy of any part of the software from
+you also gets a copy of these terms and copies of any plain-text lines beginning
+with "Required Notice:" that the licensor or a contributor provided with it.
+Retain applicable copyright, attribution, and other legal notices. Identify
+modifications and their authors without suggesting that Silicoase produced or
+endorsed them.
+
+Changes and new works
+
+The licensor and each contributor grant you an additional copyright license
+to make changes and new works based on the software for any permitted purpose.
+You retain ownership of your independently authored changes. When you distribute
+your changes under these terms, you grant recipients the licenses stated here
+for your contributions. Each recipient receives licenses directly from the
+applicable rights holders; your own licenses are not sublicensed or transferred.
+
+You may instead apply separate terms to your independently authored changes,
+provided you have authority to do so and those terms do not restrict recipients'
+permissions in the underlying software under this license. These terms do not
+grant Silicoase ownership of, or alternative commercial licensing rights in,
+your changes. Independent programs merely used alongside the software or
+communicating through its interfaces are not covered merely for that reason.
+
+Source disclosure
+
+These terms do not require you to disclose the source of your changes, whether
+you keep them private, distribute executable copies, or allow remote interaction
+with them over a network. All such uses must still be for permitted purposes
+and comply with these terms, including Notices and Silicoase branding.
+
+Patent license
+
+The licensor and each contributor grant you a patent license for the software,
+for permitted purposes only, covering patent claims they can license, or become
+able to license, that you would infringe by using their respective contributions.
+
+Noncommercial purposes
+
+A noncommercial purpose is one neither intended for nor directed toward
+commercial advantage or monetary compensation. Any noncommercial purpose is
+permitted, subject to the activities requiring a separate agreement below.
+An organization's nonprofit or educational status does not by itself make
+its use permitted.
+
+Personal uses
+
+Personal use for research, experiment, and testing for the benefit of public
+knowledge, personal study, private entertainment, hobby projects, amateur
+pursuits, or religious observance, without any anticipated commercial
+application, is permitted. Employment by a company does not by itself exclude
+personal uses undertaken independently and not for or on behalf of that company.
+
+Academic research
+
+Noncommercial academic research is permitted. Ordinary salaries, stipends,
+scholarships, and non-industry research grants supporting otherwise noncommercial
+academic research do not, by themselves, make that research commercial. This
+permission does not extend to the activities requiring a separate agreement
+below, even when undertaken by an educational or nonprofit institution.
+
+Activities requiring a separate agreement
+
+The following activities are outside the permissions of this license and
+require a separate written agreement with Silicoase, Inc.:
+
+- Selling or licensing the software or changes or new works based on it for
+  monetary compensation.
+- Providing paid hosting, consulting, research, teaching, or other services
+  using the software, including services charged only to recover costs.
+- Incorporating the software into a commercial product or service.
+- Use by or on behalf of a for-profit company, including internal research,
+  development, testing, or other business activities.
+- Industry-sponsored research, meaning research funded or otherwise sponsored
+  by a for-profit business, including contract research and research supported
+  by a business's in-kind sponsorship.
+- Any other use intended for or directed toward commercial advantage or
+  monetary compensation.
+
+These restrictions apply whether or not software is sold or distributed,
+whether or not source is disclosed, and regardless of nonprofit or educational
+status. Ordinary purchases of tools or services from commercial vendors do not
+by themselves constitute industry sponsorship.
+
+Silicoase branding
+
+No permission is granted to use the Silicoase name, logo, or other brand marks
+to brand another product or service, suggest sponsorship or endorsement, or
+represent a modified version as an official Silicoase release. The embedded
+Silicoase SVG in the MAD review template is a brand asset subject to this section.
+
+Copying embedded brand assets as part of copies of the software, truthful
+attribution, preservation of legal notices, and display of original branding
+in an otherwise unmodified MAD interface are permitted. If a modified interface
+retains original branding, prominently identify it as a modified, unofficial
+version without suggesting endorsement. Removing interface branding is permitted,
+but does not excuse removal of legal notices. Extracting brand assets for use
+as branding elsewhere or other uses outside these permissions require separate
+written permission from Silicoase, Inc. Trademark rights and defenses provided
+by applicable law remain unaffected.
+
+Outputs
+
+Experiment data, logs, research findings, and other outputs are not covered
+merely because they were produced using the software. Portions containing
+software code, documentation, or branding remain subject to their applicable
+terms. In particular, exported HTML reports contain covered viewer code and
+branding, so copies of those portions must retain these terms and legal notices.
+Producing or sharing outputs does not authorize an otherwise prohibited use
+of the software. These terms do not independently restrict dissemination of
+research findings that contain no covered material.
+
+Fair use
+
+You may have rights under applicable law, including fair use. These terms do
+not limit those rights.
+
+No other rights
+
+These terms do not allow you to sublicense or transfer any of your licenses
+to anyone else, or prevent the licensor or contributors from granting licenses
+to anyone else for material they have the right to license. These terms do not
+imply any other licenses. Uses outside these permissions require separate
+written permission from the applicable rights holders. All rights not expressly
+granted are reserved.
+
+Patent defense
+
+If you make any written claim that the software infringes or contributes to
+infringement of any patent, your patent licenses for the software end immediately.
+If your company makes such a claim, your patent licenses for the software end
+immediately for work on behalf of your company.
+
+Violations
+
+Your licenses terminate if you violate these terms or do anything with the
+software not covered by your licenses. For your first violation, your licenses
+are automatically reinstated if you come into full compliance and take practical
+steps to correct past violations before receiving written notice from an
+applicable rights holder or within 32 days after receiving that notice.
+Subsequent violations do not receive automatic reinstatement; the applicable
+rights holders may reinstate their licenses in writing. Reinstatement does not
+waive liability or obligations arising before cure. Complying downstream
+recipients retain their own licenses. Patent defense termination is not subject
+to this cure provision.
+
+No liability
+
+As far as the law allows, the software comes as is, without any warranty or
+condition, and the licensor and contributors will not be liable to you for any
+damages arising out of these terms or the use or nature of the software, under
+any kind of legal claim.
+
+This is a custom source-available license with noncommercial restrictions,
+not an open-source license.

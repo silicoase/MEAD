@@ -15,6 +15,35 @@ runs in a separate container per agent. See [DESIGN.md](DESIGN.md) for the agree
 requirements and design, and [docs/implementation.md](docs/implementation.md)
 for the current choices and limitations.
 
+## License
+
+MAD is source-available under the custom
+[Silicoase Noncommercial License, Version 2.0](LICENSE), not an open-source
+license. Noncommercial use and adaptation, including personal hobby projects
+and noncommercial academic research, are permitted. Ordinary salaries, stipends,
+scholarships, and non-industry grants do not by themselves make academic research
+commercial.
+
+Commercial use, use by or on behalf of a for-profit company, industry-sponsored
+research, and paid services (including cost-recovery services) require a separate
+written agreement with Silicoase, Inc. Educational or nonprofit status does not
+automatically exempt those activities.
+
+There is no requirement to publish or provide the source of modifications,
+including when distributing executable copies or operating modified versions
+for remote users. Retain the license and copyright/attribution notices when
+sharing covered material, and identify modifications. The underlying MAD code
+remains subject to its noncommercial restrictions even when included in a fork.
+
+The Silicoase name and logo may not imply endorsement or identify a fork as an
+official release. A modified interface retaining original branding must clearly
+identify itself as modified and unofficial. Research outputs are not automatically
+covered merely because MAD generated them. Exported HTML reports do contain
+covered viewer code and branding: include a copy of LICENSE with reports you
+share and retain legal notices. Third-party components retain their own licenses.
+
+These are custom terms and should receive legal review before public release.
+
 The rollout controller, harness, environment, task, and recorder are separate
 components so others can adapt the tooling. The implemented harnesses are the
 OpenAI Agents SDK and a scripted test harness; the implemented task is synthetic
