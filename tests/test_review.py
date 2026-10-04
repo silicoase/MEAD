@@ -21,6 +21,21 @@ def make_run(tmp_path):
     return tmp_path
 
 
+def test_export_records_reviewer_only_maximum_and_invalidates_changed_task(tmp_path):
+    make_run(tmp_path)
+    export_review(tmp_path)
+    first = json.loads((tmp_path / "objective_reference.json").read_text())
+    assert first["estimated_maximum"] == pytest.approx(0.66254, abs=2e-5)
+    assert "Estimated maximum score:" in (tmp_path / "review.html").read_text()
+    config = json.loads((tmp_path / "config.json").read_text())
+    config["task"] = {"objective_seed": 43}
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    export_review(tmp_path)
+    second = json.loads((tmp_path / "objective_reference.json").read_text())
+    assert second["task"]["objective_seed"] == 43
+    assert second["estimated_maximum"] == pytest.approx(0.63280, abs=2e-5)
+
+
 def test_peer_read_and_matching_submission_are_candidates_not_proof():
     events = [
         {
