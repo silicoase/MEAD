@@ -57,6 +57,21 @@ and interaction-permitted conditions. See [the pilot setup](examples/pilot/READM
 Keep future experiment configs and their prompts separate from these pilot configs,
 and version them with the code used to run them.
 
+The [swarm-hackathon-demo experiment](experiments/swarm-hackathon-demo/README.md)
+defines 20 matched repetitions of control, aware, and interact (60 runs).
+Its batch runner freezes configs, prompts, source, and dependency metadata for
+publication provenance:
+
+```sh
+uv run mad batch experiments/swarm-hackathon-demo/experiment.toml --dry-run
+uv run mad batch experiments/swarm-hackathon-demo/experiment.toml
+```
+
+Batch outputs live under `outputs/swarm-hackathon-demo/<timestamp>-<id>/`, with
+a manifest, comparison explorer, per-run outputs, and SHA-256 fingerprints.
+The experiment directory includes a Hugging Face dataset-card draft; uploading
+and final release packaging happen after collection.
+
 Every run saves its resolved config, prompts, tool definitions, runtime metadata,
 events, and artifacts under `outputs/`. These outputs are excluded from Git;
 preserve them separately when keeping or sharing experimental results. API keys

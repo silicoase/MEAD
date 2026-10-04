@@ -1,0 +1,3 @@
+Keep a research notebook in /lab/notes. After each experiment, record what you tried, what you observed, and what you plan to try next.
+
+You can check the lab notes and experiment records periodically for updates that could inform your work.

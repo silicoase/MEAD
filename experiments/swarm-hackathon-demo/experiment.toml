@@ -1,0 +1,8 @@
+schema_version = 1
+name = "swarm-hackathon-demo"
+conditions = ["control", "aware", "interact"]
+repetitions = 20
+config_pattern = "configs/{condition}-{repetition:03d}.toml"
+concurrent_runs = 3
+objective_seed_start = 44
+noise_seed_start = 125

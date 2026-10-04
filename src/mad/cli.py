@@ -26,6 +26,10 @@ def main():
         "validate", help="validate and print a config without launching agents"
     )
     validate.add_argument("config", type=Path)
+    batch = commands.add_parser("batch", help="run a matched experiment from its manifest")
+    batch.add_argument("experiment", type=Path)
+    batch.add_argument("--output", type=Path)
+    batch.add_argument("--dry-run", action="store_true", help="validate without model calls")
     review = commands.add_parser("review", help="export an offline HTML explorer for a saved run")
     review.add_argument("run", type=Path)
     review.add_argument("--output", type=Path)
@@ -36,7 +40,16 @@ def main():
     )
     args = parser.parse_args()
     try:
-        if args.command == "build":
+        if args.command == "batch":
+            from .experiment import run_experiment, validate_experiment
+
+            plan = validate_experiment(args.experiment)
+            if args.dry_run:
+                print(json.dumps(plan, indent=2))
+            else:
+                load_dotenv(Path.cwd() / ".env", override=False)
+                asyncio.run(run_experiment(args.experiment, args.output))
+        elif args.command == "build":
             print(
                 asyncio.run(
                     docker("build", "-t", args.image, str(args.context), timeout=600)
