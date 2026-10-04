@@ -63,8 +63,8 @@ Its batch runner freezes configs, prompts, source, and dependency metadata for
 publication provenance:
 
 ```sh
-uv run mad batch experiments/swarm-hackathon-demo/experiment.toml --dry-run
-uv run mad batch experiments/swarm-hackathon-demo/experiment.toml
+uv run --locked mad batch experiments/swarm-hackathon-demo/experiment.toml --dry-run
+uv run --locked mad batch experiments/swarm-hackathon-demo/experiment.toml
 ```
 
 Batch outputs live under `outputs/swarm-hackathon-demo/<timestamp>-<id>/`, with
@@ -83,8 +83,8 @@ From this repository, with Docker running and `uv` installed:
 
 ```sh
 uv sync --locked
-uv run mad build
-uv run mad run examples/smoke.toml
+uv run --locked mad build
+uv run --locked mad run examples/smoke.toml
 ```
 
 The smoke configuration uses scripted agents without an API key or model calls.
@@ -97,43 +97,20 @@ repository directory (or export it in your shell), choose a model available to
 your API account in `examples/openai.toml`, then run:
 
 ```sh
-uv run mad run examples/openai.toml
+uv run --locked mad run examples/openai.toml
 ```
 
-For a notebook-writing run with a 15-second experiment delay:
+Earlier runnable examples are summarized here. Run a config with
+`uv run --locked mad run examples/<filename>`.
 
-```sh
-uv run mad run examples/openai-notes-delay.toml
-```
-
-This variant asks agents to record each experiment in `/lab/notes`; it does not
-ask them to inspect other notes or mention other agents.
-
-For the same notebook prompt and delay with GPT-5.4, 80 turns, and a
-1,200-second timeout:
-
-```sh
-uv run mad run examples/openai-notes-delay-strong.toml
-```
-
-To stagger those agents by 30 seconds (start offsets of 0, 30, and 60):
-
-```sh
-uv run mad run examples/openai-notes-delay-staggered.toml
-```
-
-For GPT-6.1 Sol with the same start offsets and 10 experiments per agent:
-
-```sh
-uv run mad run examples/openai-sol-notes-delay.toml
-```
-
-For periodic lab checks, timestamped notes, provider reasoning summaries,
-10 experiments per agent, a 30-minute per-agent timeout, and simultaneous starts:
-
-```sh
-uv run mad run examples/openai-sol-periodic.toml
-```
+| Example | Notes |
+| --- | --- |
+| `openai-notes-delay.toml` | Notebook writing with 15-second measurements. |
+| `openai-notes-delay-strong.toml` | GPT-5.4, 80 turns, 20-minute timeout. |
+| `openai-notes-delay-staggered.toml` | Starts staggered by 30 seconds. |
+| `openai-sol-notes-delay.toml` | GPT-6.1 Sol with staggered starts and 10 measurements. |
+| `openai-sol-periodic.toml` | Periodic checks, timestamps, reasoning summaries, simultaneous starts. |
+| `pilot/` | Two matched repetitions of control, aware, and interact. |
 
 The model is an explicit provisional default, not a scientific recommendation.
 Live rollouts incur model API charges. Keys stay on the host and are not passed
@@ -156,7 +133,7 @@ noisy observations, to assess room for improvement.
 Configs use TOML. Validate without launching containers or calling a model:
 
 ```sh
-uv run mad validate examples/openai.toml
+uv run --locked mad validate examples/openai.toml
 ```
 
 | Setting | Meaning |
@@ -252,7 +229,7 @@ history of such writes. No automated collaboration classifier is implemented.
 Export a self-contained HTML explorer from a saved run directory:
 
 ```sh
-uv run mad review outputs/<run-directory>
+uv run --locked mad review outputs/<run-directory>
 ```
 
 Open the generated `review.html` locally. Use `--output path/to/review.html` to
@@ -277,7 +254,7 @@ their original definitions have been recovered. Where stored OpenAI responses
 remain available, retrieve their initial tool definitions with:
 
 ```sh
-uv run mad review outputs/<run-directory> --recover-tools
+uv run --locked mad review outputs/<run-directory> --recover-tools
 ```
 
 This explicit recovery uses the API key to read existing responses, makes no
@@ -294,9 +271,9 @@ not mean no discovery, particularly through untraced Python filesystem access.
 ## Verification
 
 ```sh
-uv run pytest -m 'not docker'
-MAD_DOCKER_TESTS=1 uv run pytest -m docker
-uv run ruff check src tests
+uv run --locked pytest -m 'not docker'
+MAD_DOCKER_TESTS=1 uv run --locked pytest -m docker
+uv run --locked ruff check src tests
 ```
 
 Docker tests require the sandbox image to have been built. They exercise both

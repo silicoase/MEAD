@@ -6,68 +6,44 @@ tags:
 - synthetic
 - multi-agent
 - agent-discovery
-- coordination
 - optimization
 ---
 
-# Dataset Card for swarm-hackathon-demo
+# swarm-hackathon-demo
 
-**Publication draft.** Update this card from the completed manifest before
-uploading. Generated-data licensing, authors, citation, and Hugging Face repository
-identity are pending. The included LICENSE applies to MAD source/viewer code;
-it does not assign a license to the generated research data. Add the chosen data
-license to the YAML metadata before publication.
+**Publication draft:** fill collection dates, actual run/session/measurement
+counts, authors/contact, citation, release version, and generated-data license
+before uploading. The included LICENSE covers MAD code and viewers; select the
+research-data license separately and add it to the YAML header.
 
-## Dataset description and collection
+## Collection
 
-This experiment studies peer discovery and voluntary coordination through shared
-artifacts during synthetic optimization. Planned collection: 20 matched
-repetitions × three prompt conditions × four agents = 60 rollouts / 240 sessions,
-with at most 2,400 accepted measurements. These are planned, not observed counts.
-Actual statuses, dates, counts and outcomes must be derived from manifest.json.
+Hackathon demo: planned 20 matched repetitions of control, aware, and interact,
+with four GPT-6.1 Sol agents per run (60 runs / 240 sessions).
+Each agent has 10 measurements, 80 turns, a 30-minute timeout, shared lab
+artifacts, and 15-second measurement delays. Conditions differ in peer-awareness
+and interaction-permission wording. Objective seeds are 44–63; noise seeds
+are 125–144. Exact prompts and settings are preserved in inputs/experiment/.
 
-Model: OpenAI GPT-6.1 Sol (`gpt-6.1-sol` alias); OpenAI Agents SDK.
-Conditions: control (notebook + periodic lab checks), aware (explicit peer
-awareness), interact (peer awareness + permission to interact).
-Each trio shares objective/noise seeds: objective 44–63, noise 125–144.
-The task has eight dimensions, [0,1] bounds, Gaussian noise SD 0.1,
-10 measurements per agent, 15-second delays, simultaneous starts, 80 model turns,
-and 30-minute per-agent timeouts. Both lab directories are shared.
-Provider reasoning summaries use auto; these are provider-supplied summaries,
-not complete hidden reasoning. No human collaboration labels are collected.
+## Files and metadata
 
-## Data structure and provenance
+manifest.json links conditions, repetitions, seeds, timestamps and statuses to
+run folders. Each folder contains resolved config.json, runtime.json,
+identities.json, ordered events.jsonl, summary.json, artifacts.tar,
+run_metadata.json, checksums.json, and review.html when export succeeds.
+The batch includes source/config/prompt snapshots, dependency versions and
+lockfile, Git commit/dirty status, and SHA-256 fingerprints. Runtime records
+identify the Docker image. Events preserve available model/tool outputs,
+response IDs, token usage, and provider reasoning summaries.
+Model request events include SDK settings; null values leave defaults unspecified.
+Provider metadata events preserve the returned model identifier, settings and
+request ID when available, linked by response ID. Identifiers may still be aliases.
+Document any release tables and their schemas here when packaging the data.
 
-Each batch contains a manifest, frozen inputs and source with SHA-256 hashes,
-per-run resolved configuration and runtime metadata, ordered events.jsonl,
-summary.json, identity/ownership mappings, final artifacts.tar, and HTML reviews.
-run_metadata.json links raw runs to condition, repetition, seed pair and batch.
-Source provenance includes Git commit, dirty status, the actual working-source
-snapshot, uv.lock and installed package versions. Runtime includes Docker image
-identity. Opaque random UUID author IDs identify synthetic agents, not people.
-The final release should specify flattened table schemas and links to raw files.
+## Data limitations
 
-## Intended use and limitations
-
-Use for exploratory research on artifact-mediated agent discovery, optimization,
-and coordination. Interpret scores within matched repetitions; four agents in a
-shared lab are dependent observations. Model alias changes, model randomness,
-random UUIDs, and execution timing prevent exact replay. Repetitions run in fixed
-order, and concurrent conditions can contend for host/provider resources.
-Direct Python filesystem accesses are not individually traced. Peer-read flags
-are heuristic navigation aids, not collaboration ground truth.
-
-Preserve errors, timeouts, turn limits, absent submissions and null scores.
-Report final scores and submission rates together. Automated whole-run retries
-are disabled; disclose separately collected follow-up runs. Review the actual
-failure/missingness distribution before drawing comparative conclusions.
-
-## Publication checklist
-
-Fill actual collection dates, completed/failed/missing counts, release version,
-authors/contact, code repository/commit, citation, generated-data license,
-review/redaction decisions, file schemas, and release checksums. Review generated
-text and local host paths before publication. Preserve original raw files locally
-and record release transformations. Retain source/viewer notices and LICENSE.
-
-Collection protocol: inputs/experiment/README.md.
+Author UUIDs identify synthetic agents. Model randomness, alias changes, UUIDs,
+and scheduling prevent exact replay. Provider summaries are not complete hidden
+reasoning; Python file accesses are not individually traced. Final scores may
+be null when no submission occurs. File-tool flags are heuristic navigation aids.
+Report actual incomplete/error records and any transformations in the release.

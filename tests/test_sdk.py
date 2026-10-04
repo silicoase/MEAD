@@ -51,6 +51,7 @@ class FakeModel(Model):
             ],
             usage=Usage(requests=1, input_tokens=10, output_tokens=5, total_tokens=15),
             response_id=f"response-{self.calls}",
+            request_id=f"request-{self.calls}",
         )
 
     async def stream_response(self, *args, **kwargs):
@@ -80,9 +81,13 @@ async def test_real_sdk_loop_retries_invalid_submission_and_stops_on_success(tmp
         events = [json.loads(line) for line in (tmp_path / "events.jsonl").read_text().splitlines()]
         assert sum(e["kind"] == "model_request" for e in events) == 3
         assert sum(e["kind"] == "model_response" for e in events) == 3
-        agent_context = json.dumps([
-            e for e in events if e["kind"] in ("model_request", "agent_interface")
-        ])
+        responses = [e for e in events if e["kind"] == "model_response"]
+        assert [e["request_id"] for e in responses] == [f"request-{i}" for i in (1, 2, 3)]
+        requests = [e for e in events if e["kind"] == "model_request"]
+        assert all(e["model_settings"]["reasoning"]["summary"] == "auto" for e in requests)
+        agent_context = json.dumps(
+            [e for e in events if e["kind"] in ("model_request", "agent_interface")]
+        )
         assert "review-only-canary" not in agent_context
         assert str(private_reference["estimated_maximum"]) not in agent_context
         assert all(
@@ -90,6 +95,38 @@ async def test_real_sdk_loop_retries_invalid_submission_and_stops_on_success(tmp
             for e in events
             if e["kind"] == "model_response"
         )
+    finally:
+        recorder.close()
+
+
+async def test_provider_metadata_survives_sdk_normalization(tmp_path, monkeypatch):
+    from agents.models.openai_responses import OpenAIResponsesModel
+    from openai.types.responses import Response
+
+    response = Response.model_construct(
+        id="response-test",
+        model="provider-model-version",
+        status="completed",
+        reasoning={"effort": "medium", "summary": "auto"},
+        temperature=None,
+    )
+    response._request_id = "provider-request-test"
+
+    async def fake_fetch(self, *args, **kwargs):
+        return response
+
+    monkeypatch.setenv("OPENAI_API_KEY", "fake-test-key")
+    monkeypatch.setattr(OpenAIResponsesModel, "_fetch_response", fake_fetch)
+    recorder = Recorder(tmp_path)
+    try:
+        model = OpenAIHarness(RolloutConfig(), None, recorder).recording_model(0)
+        assert await model._fetch_response() is response
+        event = json.loads((tmp_path / "events.jsonl").read_text())
+        assert event["metadata"]["model"] == "provider-model-version"
+        assert event["metadata"]["reasoning"]["effort"] == "medium"
+        assert event["request_id"] == "provider-request-test"
+        assert event["response_id"] == "response-test"
+        assert "fake-test-key" not in json.dumps(event)
     finally:
         recorder.close()
 

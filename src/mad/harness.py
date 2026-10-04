@@ -92,6 +92,45 @@ class OpenAIHarness:
     def __init__(self, config: RolloutConfig, service, recorder, model=None):
         self.config, self.service, self.recorder, self.model = config, service, recorder, model
 
+    def recording_model(self, agent: int):
+        from agents.models.openai_provider import OpenAIProvider
+        from agents.models.openai_responses import OpenAIResponsesModel
+
+        recorder = self.recorder
+
+        class RecordingResponsesModel(OpenAIResponsesModel):
+            async def _fetch_response(self, *args, **kwargs):
+                # The pinned SDK discards these fields when converting to ModelResponse.
+                response = await super()._fetch_response(*args, **kwargs)
+                if getattr(response, "id", None):
+                    recorder.emit(
+                        "provider_response_metadata",
+                        agent,
+                        response_id=response.id,
+                        request_id=getattr(response, "_request_id", None),
+                        metadata=response.model_dump(
+                            mode="json",
+                            include={
+                                "model",
+                                "reasoning",
+                                "temperature",
+                                "top_p",
+                                "max_output_tokens",
+                                "parallel_tool_calls",
+                                "truncation",
+                                "service_tier",
+                                "text",
+                                "tool_choice",
+                                "status",
+                                "created_at",
+                            },
+                        ),
+                    )
+                return response
+
+        client = OpenAIProvider()._get_client()
+        return RecordingResponsesModel(self.config.harness.model, client)
+
     async def run(self, agent: int, instructions: str) -> dict:
         from agents import Agent, ModelSettings, RunConfig, Runner
         from agents.agent import ToolsToFinalOutputResult
@@ -103,7 +142,11 @@ class OpenAIHarness:
         class Hooks(RunHooksBase):
             async def on_llm_start(self, context, sdk_agent, system_prompt, input_items):
                 recorder.emit(
-                    "model_request", agent, system_prompt=system_prompt, input_items=input_items
+                    "model_request",
+                    agent,
+                    system_prompt=system_prompt,
+                    input_items=input_items,
+                    model_settings=sdk_agent.model_settings.to_json_dict(),
                 )
 
             async def on_llm_end(self, context, sdk_agent, response):
@@ -113,6 +156,7 @@ class OpenAIHarness:
                     output=[item.model_dump(mode="json") for item in response.output],
                     usage=asdict(response.usage),
                     response_id=response.response_id,
+                    request_id=getattr(response, "request_id", None),
                 )
 
         async def finish_on_submission(context, results):
@@ -137,10 +181,11 @@ class OpenAIHarness:
             model=str(self.model or self.config.harness.model),
             reasoning_summary=self.config.harness.reasoning_summary,
         )
+        model = self.model if self.model is not None else self.recording_model(agent)
         sdk_agent = Agent(
             name="Researcher",
             instructions=instructions,
-            model=self.model or self.config.harness.model,
+            model=model,
             tools=tools,
             model_settings=ModelSettings(
                 parallel_tool_calls=False,
