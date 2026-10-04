@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+BACKGROUND = "#F7F6F0"
 COLORS = ["#075C78", "#4B9AB5", "#84BDCF"]
 LINE_STYLES = ["-", "--", ":"]
 
@@ -20,6 +21,8 @@ def configure_theme(output):
     font_manager.fontManager.addfont(font_path)
     family = font_manager.FontProperties(fname=font_path).get_name()
     sns.set_theme(style="whitegrid", font=family, rc={
+        "figure.facecolor": BACKGROUND, "axes.facecolor": BACKGROUND,
+        "savefig.facecolor": BACKGROUND,
         "text.color": "#18181B", "axes.labelcolor": "#18181B",
         "xtick.color": "#18181B", "ytick.color": "#18181B",
         "grid.color": "#E6EAED", "grid.linewidth": .7,
@@ -116,5 +119,5 @@ class Chart:
         import matplotlib.pyplot as plt
 
         for extension in ("png", "svg"):
-            self.fig.savefig(output / f"{name}.{extension}", dpi=200, facecolor="white")
+            self.fig.savefig(output / f"{name}.{extension}", dpi=200, facecolor=BACKGROUND)
         plt.close(self.fig)

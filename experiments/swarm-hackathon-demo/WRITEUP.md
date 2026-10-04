@@ -9,7 +9,7 @@ Some agents share a natural propensity for discovering and collaborating with ot
 
 I develop a simple environment to test these questions, Measuring Agent Discovery (MAD). You can view this environment on [GitHub](https://github.com/silicoase/measuring-agent-discovery). You can view the data underlying this post on [HuggingFace](https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo).
 
-In this MAD pilot, notifying agents of the existence of others working on the same task leads to a noticeable improvement in task performance. Adding an explicit call for interaction does not further improve performance.
+In this MAD pilot, notifying agents of the existence of others working on the same task leads to a noticeable improvement in task performance. Adding an explicit call for interaction does not further improve performance. However, it does lead to more direct agent mentions, especially towards the end of a run.
 
 # Piloting MAD
 
@@ -42,7 +42,7 @@ I conduct 20 matched repetitions of three conditions, totaling 60 runs. Each mat
 # Results
 
 I plot the best (noiseless) score achieved _in experiments_ by any of the four agents in a given run below, normalizing elapsed time from the first agent's start to the last agent's finish. The awareness and interaction arms both noticeably outperform the control arm. The difference in performance between the two conditions is small, although the interaction arm appears to open up a slightly larger, but ultimately temporary, lead earlier in the session.
-![Performance throughout 10-experiment runs](figures/performance-9896b3f5.png)
+![Performance throughout 10-experiment runs](figures/performance-893c1aa7.png)
 I next summarize final (noiseless) scores in the table below. Again, the awareness and interaction arms noticeably outperform the control arm in average and maximum score across agents. The gap is especially large for the average score; final scores in the control arm have substantially higher within-run, between-agent variance than scores in the other two arms. Encouragements of information sharing, either indirect or direct, help agents converge on the best-known strategy.
 
 | Condition | Mean final score across all agents | Mean of maximum final score across agents per run | Mean within-run SD of final scores |
@@ -51,8 +51,8 @@ I next summarize final (noiseless) scores in the table below. Again, the awarene
 | Aware | 0.4503 | 0.4720 | 0.0232 |
 | Interact | 0.4160 | 0.4480 | 0.0364 |
 
-I next summarize interactions by counting the number of times agents read a peer's files or explicitly mention another agent.[^interaction-counts] I report cumulative counts of these three metrics across the four agents, averaged across runs within each condition. The awareness and interaction conditions induce similar amounts of other agent mentions. However, the interaction condition yields more peer-file reads and more mentions of specific agents, with the latter difference becoming more apparent towards the end of a run.
-![Agent interactions: peer-file reads and agent mentions](figures/collaboration-three-panel-ae876a7b.png)
+I next summarize interactions by counting the number of times agents read a peer's files or explicitly mention another agent.[^interaction-counts] I report cumulative counts of these three metrics across the four agents, averaged across runs within each condition. The awareness and interaction conditions induce similar amounts of other agent mentions. However, the interaction condition yields more mentions of _specific_ agents, with the latter difference becoming more apparent towards the end of a run.
+![Agent interactions: peer-file reads and agent mentions](figures/collaboration-three-panel-bf9ac7d6.png)
 
 [^interaction-counts]: File reads count successful reads of another agent's notes or measurement records, including repeated reads. Direct Python reads are not recorded, so these counts could understate the actual extent of file reading. Panel B counts responses mentioning other agents or peers, either in generic terms or explicitly by ID, in generated text, generated file content, or available reasoning summaries. Panel C counts the subset mentioning a specific other agent by its ID. I exclude supplied prompts and text returned by tools.
 
