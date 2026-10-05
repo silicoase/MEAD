@@ -1,0 +1,32 @@
+{
+  "repo_id": "connacher-silicoase/swarm-hackathon-demo",
+  "private": false,
+  "revision": "3b44372a47184e074b79f226e2a4938f454e2f38",
+  "head_unchanged": true,
+  "expected_files": 766,
+  "remote_files": 767,
+  "extra_builtin_files": [
+    ".gitattributes"
+  ],
+  "missing": [],
+  "unexpected_files": [],
+  "mismatches": [],
+  "hash_methods": {
+    "git_blob_sha1": 706,
+    "lfs_sha256": 60
+  },
+  "release_tag": "v1.0.0",
+  "public_release_date": "2026-10-04",
+  "anonymous_download_checks": [
+    {
+      "path": "README.md",
+      "status": 200,
+      "checksum_matches": true
+    },
+    {
+      "path": "raw/20261004T211502Z-442d48aa/control-001/summary.json",
+      "status": 200,
+      "checksum_matches": true
+    }
+  ]
+}

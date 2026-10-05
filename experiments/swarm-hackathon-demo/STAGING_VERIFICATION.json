@@ -1,0 +1,18 @@
+{
+  "repo_id": "connacher-silicoase/swarm-hackathon-demo",
+  "private": true,
+  "revision": "41f748be59f0e3206ecb2bd364bf2b0bc70a78ec",
+  "head_unchanged": true,
+  "expected_files": 766,
+  "remote_files": 767,
+  "extra_builtin_files": [
+    ".gitattributes"
+  ],
+  "missing": [],
+  "unexpected_files": [],
+  "mismatches": [],
+  "hash_methods": {
+    "git_blob_sha1": 706,
+    "lfs_sha256": 60
+  }
+}
