@@ -41,8 +41,15 @@ and SHA-256 checksums. Each run saves its resolved config, timestamps, events,
 runtime/image metadata, outcomes, identities, final artifacts, and HTML explorer.
 Credentials are excluded from input snapshots.
 
-For Hugging Face, finalize the dataset card with actual collection dates/counts,
-file schemas, authors/citation, and the chosen generated-data license. Verify
-checksums and review the release files for credentials or private host details.
-Included MAD source and HTML viewers retain their code license and notices.
-The upload utility is deferred until the results are available.
+The completed raw-first dataset is publicly released on
+[Hugging Face as v1.0.0](https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo/tree/v1.0.0).
+See [PACKAGING.md](PACKAGING.md) for the local package and transformation record,
+[RELEASE_AUDIT.md](RELEASE_AUDIT.md) for collection checks, and
+[PUBLIC_RELEASE_VERIFICATION.json](PUBLIC_RELEASE_VERIFICATION.json) for remote
+verification. Generated data uses CC BY 4.0; included MAD source, copied prompts
+and HTML viewer code retain their existing license and notices.
+
+Optional Parquet preparation is available through
+[PARQUET_EXPORT.md](PARQUET_EXPORT.md). The exporter preserves raw records, audits
+submissions, and writes tables/schema/provenance into a new directory. The
+initial Hugging Face release remains raw-only; tables can be added later.
