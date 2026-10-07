@@ -317,5 +317,6 @@ links and the dataset main-branch display metadata; the original `v1.0.0` tag
 remains pinned to its original commit and the experiment identifier remains
 `swarm-hackathon-demo`. Historical verification records retain original names.
 See RENAME_VERIFICATION.json for the renamed dataset content verification.
-The local checkout will be named MEAD; an old-path compatibility symlink lets
-existing Codex chats continue using their saved project path.
+The local checkout is named MEAD. Codex does not support symlinked writable
+project roots, so no old-path alias is retained. Existing Codex project settings
+need to reference `/Users/connacher/projects/proj_miscellany/MEAD`.
