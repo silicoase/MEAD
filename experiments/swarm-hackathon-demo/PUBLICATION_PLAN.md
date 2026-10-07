@@ -307,3 +307,15 @@ Unauthenticated access to the tagged inventory and checksum-matching downloads
 of README.md and a raw summary succeeded. See
 [PUBLIC_RELEASE_VERIFICATION.json](PUBLIC_RELEASE_VERIFICATION.json).
 The release remains raw-only; all original batch files are preserved locally.
+
+## Repository naming update — 2026-10-07
+
+With explicit user authorization, renamed the GitHub project to `silicoase/MEAD`
+and the Hugging Face dataset to `connacher-silicoase/MEAD`. Both use the title
+Model Environment for Agent Discovery (MEAD). Updated active documentation
+links and the dataset main-branch display metadata; the original `v1.0.0` tag
+remains pinned to its original commit and the experiment identifier remains
+`swarm-hackathon-demo`. Historical verification records retain original names.
+See RENAME_VERIFICATION.json for the renamed dataset content verification.
+The local checkout will be named MEAD; an old-path compatibility symlink lets
+existing Codex chats continue using their saved project path.
