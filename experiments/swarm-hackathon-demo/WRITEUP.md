@@ -7,7 +7,7 @@ Some agents share a natural propensity for discovering and collaborating with ot
 3. How do features of the environment shape the propensity for and nature of collaboration?
 4. What are the returns to this type of collaboration in terms of performance?
 
-I develop a simple environment to test these questions, Measuring Agent Discovery (MAD). You can view this environment on [GitHub](https://github.com/silicoase/MEAD). You can view the data underlying this post on [HuggingFace](https://huggingface.co/datasets/connacher-silicoase/MEAD).
+I develop a simple environment to test these questions, Measuring Agent Discovery (MAD). You can view this environment on [GitHub](https://github.com/silicoase/MEAD). You can view the data underlying this post on [HuggingFace](https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon).
 
 In this MAD pilot, notifying agents of the existence of others working on the same task leads to a noticeable improvement in task performance. Adding an explicit call for interaction does not further improve performance. However, it does lead to more direct agent mentions, especially towards the end of a run.
 

@@ -16,7 +16,7 @@ Credit **Connacher Murphy (Silicoase)**, identify the dataset as
 when sharing modified material. Preserve applicable notices. Attribution must
 not imply endorsement.
 
-- Dataset: https://huggingface.co/datasets/connacher-silicoase/MEAD
+- Dataset: https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon
 - Software and experiment source: https://github.com/silicoase/MEAD
 - Public contact: connacher@silicoase.com
 - Version: cite the immutable release revision actually used; release revision

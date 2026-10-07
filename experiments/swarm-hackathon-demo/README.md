@@ -42,7 +42,7 @@ runtime/image metadata, outcomes, identities, final artifacts, and HTML explorer
 Credentials are excluded from input snapshots.
 
 The completed raw-first dataset is publicly released on
-[Hugging Face as v1.0.0](https://huggingface.co/datasets/connacher-silicoase/MEAD/tree/v1.0.0).
+[Hugging Face as v1.0.0](https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon/tree/v1.0.0).
 See [PACKAGING.md](PACKAGING.md) for the local package and transformation record,
 [RELEASE_AUDIT.md](RELEASE_AUDIT.md) for collection checks, and
 [PUBLIC_RELEASE_VERIFICATION.json](PUBLIC_RELEASE_VERIFICATION.json) for remote

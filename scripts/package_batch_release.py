@@ -118,7 +118,7 @@ def release_card(card, version, batch_id):
         r"\*\*OPEN:\*\* formal citation.*?date is asserted by this draft\.",
         f"Suggested citation: Murphy, Connacher (2026). *swarm-hackathon-demo*, "
         f"{version}. Silicoase. "
-        "https://huggingface.co/datasets/connacher-silicoase/MEAD. "
+        "https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon. "
         "Include the immutable Hub commit used once uploaded. No DOI is assigned. "
         "The results writeup will be linked separately when finalized.",
         card,
