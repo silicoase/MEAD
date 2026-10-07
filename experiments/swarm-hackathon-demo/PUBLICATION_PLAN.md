@@ -16,7 +16,7 @@ was configured, and no experiment was executed here. Configurations and prompts 
 
 | Decision | Recommendation / proposed default | Status |
 | --- | --- | --- |
-| Repository | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD) | **CREATED:** private dataset repository, 2026-10-04 |
+| Repository | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon) | **CREATED:** private dataset repository, 2026-10-04 |
 | Visibility | Stage privately, inspect, then make public | **AGREED** |
 | Authentication | Local HF login or environment-managed token with write access to the selected dataset; confirm account and organization permissions without exposing token values | **VERIFIED:** browser and CLI signed in as connacher-silicoase; user supplied successful `hf auth whoami` output; repository write permission not yet checked |
 | Generated-data license | CC BY 4.0 for generated research data, with component exclusions | **AGREED:** user accepted the recommended CC BY 4.0 option on 2026-10-04 |

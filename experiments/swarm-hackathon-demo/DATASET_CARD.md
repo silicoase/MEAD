@@ -24,7 +24,7 @@ launch-time card inside the raw batch snapshot.
 
 | Field | Value |
 | --- | --- |
-| Hugging Face repository / visibility | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD), publicly released 2026-10-04 as v1.0.0 |
+| Hugging Face repository / visibility | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD-swarm-hackathon), publicly released 2026-10-04 as v1.0.0 |
 | Release version / immutable revision | v1.0.0 / `3b44372a47184e074b79f226e2a4938f454e2f38` |
 | Creators / affiliations | Connacher Murphy — Silicoase |
 | Public contact | connacher@silicoase.com |
