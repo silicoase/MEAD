@@ -16,13 +16,13 @@ was configured, and no experiment was executed here. Configurations and prompts 
 
 | Decision | Recommendation / proposed default | Status |
 | --- | --- | --- |
-| Repository | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo) | **CREATED:** private dataset repository, 2026-10-04 |
+| Repository | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD) | **CREATED:** private dataset repository, 2026-10-04 |
 | Visibility | Stage privately, inspect, then make public | **AGREED** |
 | Authentication | Local HF login or environment-managed token with write access to the selected dataset; confirm account and organization permissions without exposing token values | **VERIFIED:** browser and CLI signed in as connacher-silicoase; user supplied successful `hf auth whoami` output; repository write permission not yet checked |
 | Generated-data license | CC BY 4.0 for generated research data, with component exclusions | **AGREED:** user accepted the recommended CC BY 4.0 option on 2026-10-04 |
 | Authors / affiliations | Connacher Murphy — Silicoase | **AGREED** |
 | Contact | connacher@silicoase.com | **AGREED:** public email |
-| Citation | Connacher Murphy; link https://github.com/silicoase/measuring-agent-discovery | **AGREED:** author and GitHub link; version/revision and formal citation still open |
+| Citation | Connacher Murphy; link https://github.com/silicoase/MEAD | **AGREED:** author and GitHub link; version/revision and formal citation still open |
 | Release layout | Raw batch first; optional Parquet tables in a later revision | **AGREED:** initial raw-only release; trace/artifact exclusions still to review |
 | Completion / submission audit | Fully complete means all 60 runs finished; separately check every agent submitted | **AGREED:** mandatory audit of all 240 agent slots; disclose exceptions before upload |
 | Limitations | Card lists known implementation limits; add collection incidents and access restrictions after collection | **OPEN:** additional disclosures |

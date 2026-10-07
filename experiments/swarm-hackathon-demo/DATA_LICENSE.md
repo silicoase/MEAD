@@ -16,8 +16,8 @@ Credit **Connacher Murphy (Silicoase)**, identify the dataset as
 when sharing modified material. Preserve applicable notices. Attribution must
 not imply endorsement.
 
-- Dataset: https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo
-- Software and experiment source: https://github.com/silicoase/measuring-agent-discovery
+- Dataset: https://huggingface.co/datasets/connacher-silicoase/MEAD
+- Software and experiment source: https://github.com/silicoase/MEAD
 - Public contact: connacher@silicoase.com
 - Version: cite the immutable release revision actually used; release revision
   is pending collection and packaging.
