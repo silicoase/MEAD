@@ -1,5 +1,5 @@
 ---
-pretty_name: swarm-hackathon-demo
+pretty_name: Model Environment for Agent Discovery (MEAD)
 license: cc-by-4.0
 language:
 - en
@@ -10,7 +10,7 @@ tags:
 - optimization
 ---
 
-# swarm-hackathon-demo
+# Model Environment for Agent Discovery (MEAD)
 
 **Release draft template — v1.0.0 is publicly released.** The final
 read-only audit confirms all 60 runs finished, all 240 agents submitted, and
@@ -24,7 +24,7 @@ launch-time card inside the raw batch snapshot.
 
 | Field | Value |
 | --- | --- |
-| Hugging Face repository / visibility | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/swarm-hackathon-demo), publicly released 2026-10-04 as v1.0.0 |
+| Hugging Face repository / visibility | [connacher-silicoase/swarm-hackathon-demo](https://huggingface.co/datasets/connacher-silicoase/MEAD), publicly released 2026-10-04 as v1.0.0 |
 | Release version / immutable revision | v1.0.0 / `3b44372a47184e074b79f226e2a4938f454e2f38` |
 | Creators / affiliations | Connacher Murphy — Silicoase |
 | Public contact | connacher@silicoase.com |
@@ -35,7 +35,7 @@ launch-time card inside the raw batch snapshot.
 | Submissions / accepted measurements / completed measurements | 240 confirmed submissions / 2,400 accepted / 2,400 completion timestamps / 2,400 confirmed lab publications |
 | Complete matched repetitions / collection incidents | 20 complete matched repetitions; no submission inconsistencies, missing expected run files, or checksum mismatches found in final audit |
 | Release layout / exclusions / redactions | **AGREED:** raw batch first, optional analysis tables later; exclusions/redactions pending review |
-| Citation / results writeup | Connacher Murphy; [MAD GitHub repository](https://github.com/silicoase/measuring-agent-discovery); versioned citation and writeup pending |
+| Citation / results writeup | Connacher Murphy; [MAD GitHub repository](https://github.com/silicoase/MEAD); versioned citation and writeup pending |
 
 ## Dataset purpose
 
@@ -196,7 +196,7 @@ authenticate a modified release.
 
 Author: Connacher Murphy. Affiliation: Silicoase. Public contact:
 [connacher@silicoase.com](mailto:connacher@silicoase.com).
-Software and experiment source: [MAD GitHub repository](https://github.com/silicoase/measuring-agent-discovery).
+Software and experiment source: [MAD GitHub repository](https://github.com/silicoase/MEAD).
 
 **OPEN:** formal citation, release version and immutable Hugging Face revision, and final results-writeup link. No paper, DOI, or publication
 date is asserted by this draft.

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "measuring-agent-discovery"
 version = "0.1.0"
-description = "Configurable rollouts for measuring emergent agent discovery"
+description = "Model Environment for Agent Discovery (MEAD)"
 license = "LicenseRef-Silicoase-Noncommercial-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"

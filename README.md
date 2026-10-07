@@ -1,6 +1,6 @@
-# MAD — Measuring Agent Discovery
+# Model Environment for Agent Discovery (MEAD)
 
-MAD provides configurable rollouts for studying whether independently
+MEAD provides configurable rollouts for studying whether independently
 working AI agents discover one another through task artifacts and develop
 coordination without being instructed to do so.
 
@@ -9,7 +9,7 @@ independent noisy measurements, and individual experiment budgets. Agents
 have private workspaces and access to a common lab containing experiment records
 and voluntary notes.
 
-MAD runs locally with Docker, including Docker Desktop on
+MEAD runs locally with Docker, including Docker Desktop on
 macOS. Python and the OpenAI Agents SDK run on the host; agent-generated Python
 runs in a separate container per agent. See [DESIGN.md](DESIGN.md) for the
 architecture and experiment setup, and [docs/implementation.md](docs/implementation.md)
@@ -17,7 +17,7 @@ for the current choices and limitations.
 
 ## License
 
-MAD is source-available under the custom
+MEAD is source-available under the custom
 [Silicoase Noncommercial License, Version 2.0](LICENSE), not an open-source
 license. Noncommercial use and adaptation, including personal hobby projects
 and noncommercial academic research, are permitted. Ordinary salaries, stipends,
@@ -32,13 +32,13 @@ automatically exempt those activities.
 There is no requirement to publish or provide the source of modifications,
 including when distributing executable copies or operating modified versions
 for remote users. Retain the license and copyright/attribution notices when
-sharing covered material, and identify modifications. The underlying MAD code
+sharing covered material, and identify modifications. The underlying MEAD code
 remains subject to its noncommercial restrictions even when included in a fork.
 
 The Silicoase name and logo may not imply endorsement or identify a fork as an
 official release. A modified interface retaining original branding must clearly
 identify itself as modified and unofficial. Research outputs are not automatically
-covered merely because MAD generated them. Exported HTML reports do contain
+covered merely because MEAD generated them. Exported HTML reports do contain
 covered viewer code and branding: include a copy of LICENSE with reports you
 share and retain legal notices. Third-party components retain their own licenses.
 
@@ -218,7 +218,7 @@ Model responses and usage available through the SDK are recorded locally; SDK
 trace export is disabled. Failed or interrupted runs preserve available events
 and, after successful setup, attempt a final artifact snapshot. Containers and
 volumes are removed after snapshotting. A hard process kill can leave resources
-behind; MAD-managed resources have the `mad.managed=true` label.
+behind; MEAD-managed resources have the `mad.managed=true` label.
 
 File-tool reads/searches/writes are logged explicitly. Direct Python file reads
 and writes are not individually traced, and final snapshots are not a complete
@@ -249,7 +249,7 @@ context size of a single call. No model context limit is assumed.
 
 OpenAI rollouts record available tool definitions in an
 `agent_interface` event. Runs without that event retain their recorded system prompts but
-show explicitly labeled tool definitions from the current MAD version unless
+show explicitly labeled tool definitions from the current MEAD version unless
 their original definitions have been recovered. Where stored OpenAI responses
 remain available, retrieve their initial tool definitions with:
 
@@ -272,7 +272,7 @@ not mean no discovery, particularly through untraced Python filesystem access.
 
 ```sh
 uv run --locked pytest -m 'not docker'
-MAD_DOCKER_TESTS=1 uv run --locked pytest -m docker
+MEAD_DOCKER_TESTS=1 uv run --locked pytest -m docker
 uv run --locked ruff check src tests
 ```
 
@@ -283,3 +283,7 @@ test uses a fake model, avoiding network calls and charges.
 
 Documentation describes current interfaces, defaults, and operational limits.
 Record change history in commits and pull requests.
+
+The project was previously named Measuring Agent Discovery (MAD). Existing
+`mad` commands, Python imports, and experiment identifiers remain compatible.
+The original license text retains its historical software name.
