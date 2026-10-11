@@ -1,0 +1,27 @@
+agents = 10
+experiment_budget = 10
+max_turns = 80
+timeout_seconds = 1800
+runs_visibility = "all"
+notes_visibility = "all"
+note_timestamps = true
+experiment_duration_seconds = 0.0
+start_stagger_seconds = 1.0
+
+[harness]
+kind = "openrouter"
+max_tokens = 4096
+request_concurrency = 3
+continue_after_text_final = true
+request_retries = 3
+retry_backoff_seconds = 10
+
+[task]
+kind = "synthetic"
+dimensions = 8
+objective_seed = 42
+noise_seed = 123
+noise_std = 0.1
+
+[[harness.routes]]
+model = "meta-llama/llama-4-scout"

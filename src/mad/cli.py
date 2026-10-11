@@ -30,6 +30,10 @@ def main():
     batch.add_argument("experiment", type=Path)
     batch.add_argument("--output", type=Path)
     batch.add_argument("--dry-run", action="store_true", help="validate without model calls")
+    preflight = commands.add_parser("preflight", help="two-turn native-tool check; no experiments")
+    preflight.add_argument("config", type=Path)
+    preflight.add_argument("--batch", action="store_true", help="check each model in an experiment")
+    preflight.add_argument("--output", type=Path)
     review = commands.add_parser("review", help="export an offline HTML explorer for a saved run")
     review.add_argument("run", type=Path)
     review.add_argument("--output", type=Path)
@@ -40,7 +44,34 @@ def main():
     )
     args = parser.parse_args()
     try:
-        if args.command == "batch":
+        if args.command == "preflight":
+            from .preflight import preflight_model
+
+            load_dotenv(Path.cwd() / ".env", override=False)
+            directory = args.output or Path("outputs") / (
+                "preflight-"
+                + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+                + "-"
+                + uuid.uuid4().hex[:8]
+            )
+            if args.batch:
+                from .experiment import validate_experiment
+
+                plan = validate_experiment(args.config)
+                filenames = plan["model_configs"] or {"model": plan["config_file"]}
+            else:
+                filenames = {"model": args.config.name}
+            reports = []
+            for label, filename in filenames.items():
+                cfg = load_config(args.config.parent / filename)
+                if len(cfg.harness.routes) > 1:
+                    raise ValueError("preflight accepts one shared route per model config")
+                report = asyncio.run(preflight_model(cfg, directory / label))
+                reports.append(dict(model_key=label, **report))
+            print(json.dumps(dict(output=str(directory.resolve()), models=reports), indent=2))
+            if any(report["status"] != "passed" for report in reports):
+                raise SystemExit(1)
+        elif args.command == "batch":
             from .experiment import run_experiment, validate_experiment
 
             plan = validate_experiment(args.experiment)

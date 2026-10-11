@@ -1,0 +1,4 @@
+# Versions used to render the recent pilot figures.
+matplotlib==3.11.2
+numpy==2.5.3
+fonttools==4.66.1

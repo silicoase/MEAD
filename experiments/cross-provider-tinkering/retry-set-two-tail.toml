@@ -1,0 +1,15 @@
+schema_version = 3
+name = "cross-provider-tinkering-set-two-tail-recovery"
+conditions = ["control", "interact"]
+repetitions = 1
+concurrent_runs = 2
+objective_seed_start = 43
+noise_seed_start = 124
+
+[prompts]
+control = "prompts/control.txt"
+interact = "prompts/interact.txt"
+
+[model_configs]
+qwen = "qwen/config.toml"
+minimax = "minimax/config.toml"

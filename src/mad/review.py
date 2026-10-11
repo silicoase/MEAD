@@ -255,6 +255,8 @@ def recover_interfaces(directory: Path, client=None) -> dict:
     ]
     if not missing:
         return recovered
+    if data["config"].get("harness", {}).get("kind") == "openrouter":
+        raise ValueError("OpenRouter cannot recover missing interfaces from stored OpenAI responses")
     owned_client = client is None
     if owned_client:
         from openai import OpenAI

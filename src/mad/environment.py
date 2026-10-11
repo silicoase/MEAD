@@ -376,6 +376,33 @@ finally:
             agent, PYTHON_WORKER, dict(code=code, timeout=timeout), timeout + 5
         )
 
+    async def freeze(self):
+        names = list(self.containers.values())
+        if names:
+            states = await docker("inspect", "--format", "{{.Name}} {{.State.Running}}", *names)
+            names = [
+                line.split()[0].lstrip("/")
+                for line in states.decode().splitlines()
+                if line.endswith(" true")
+            ]
+        # Track before awaiting: cancellation/partial Docker failure still attempts thaw.
+        self.frozen_containers = names
+        if names:
+            await docker("pause", *names)
+
+    async def thaw(self):
+        names = getattr(self, "frozen_containers", [])
+        if names:
+            states = await docker("inspect", "--format", "{{.Name}} {{.State.Paused}}", *names)
+            paused = [
+                line.split()[0].lstrip("/")
+                for line in states.decode().splitlines()
+                if line.endswith(" true")
+            ]
+            if paused:
+                await docker("unpause", *paused)
+        self.frozen_containers = []
+
     async def stop_agent(self, agent: int):
         name = self.containers.get(agent)
         if name:

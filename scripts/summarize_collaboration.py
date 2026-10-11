@@ -32,9 +32,13 @@ def authored_text(output):
     """Exclude supplied prompts, tool results, opaque reasoning, and Python code."""
     for item in output:
         if item.get("type") == "reasoning":
-            for part in item.get("summary", []):
-                if part.get("text"):
-                    yield "reasoning_summary", part["text"]
+            seen = set()
+            for field, source in [("summary", "reasoning_summary"), ("content", "reasoning_text")]:
+                for part in item.get(field, []) or []:
+                    text = part.get("text")
+                    if text and text not in seen:
+                        seen.add(text)
+                        yield source, text
         elif item.get("type") == "message":
             for part in item.get("content", []):
                 if part.get("type") == "output_text" and part.get("text"):
@@ -100,6 +104,46 @@ def analyze_events(events, ownership, identities):
                                      elapsed_seconds=event["elapsed_seconds"],
                                      response_id=response_id, excerpts=excerpts))
     return reads, mentions
+
+
+def analyze_discoveries(events, identities):
+    """First successful listing showing a known peer's artifact, per agent/type."""
+    pending = {}
+    owners = {identity: agent for agent, identity in identities.items()}
+    discoveries = {key: [] for key in ("discovered_peer_result", "discovered_peer_note", "discovered_either")}
+    seen = {key: set() for key in discoveries}
+    for event in events:
+        agent, kind = event.get("agent"), event["kind"]
+        if kind == "tool_called":
+            pending[agent] = event
+        elif kind == "tool_cancelled":
+            pending.pop(agent, None)
+        elif kind == "tool_result":
+            call = pending.pop(agent, None)
+            result = event.get("result")
+            if not call or call["tool"] != "list_files" or not isinstance(result, list):
+                continue
+            path = PurePosixPath(call.get("arguments", {}).get("path", ""))
+            category = {
+                PurePosixPath("/lab/runs"): "discovered_peer_result",
+                PurePosixPath("/lab/notes"): "discovered_peer_note",
+            }.get(path)
+            if category is None:
+                continue
+            for entry in result:
+                peer = owners.get(entry.get("author_id"))
+                if peer is None or peer == agent or entry.get("directory") is not False:
+                    continue
+                evidence = dict(agent=agent, peer=peer, path=str(path / entry["name"]),
+                                artifact="measurement" if category == "discovered_peer_result" else "note",
+                                sequence=event["sequence"], call_sequence=call["sequence"],
+                                elapsed_seconds=event["elapsed_seconds"])
+                for key in (category, "discovered_either"):
+                    if agent not in seen[key]:
+                        seen[key].add(agent)
+                        discoveries[key].append(evidence.copy())
+                break
+    return discoveries
 
 
 def collect(batch, output):

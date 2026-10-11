@@ -1,0 +1,12 @@
+schema_version = 2
+name = "cross-provider-kimi"
+conditions = ["control", "interact"]
+repetitions = 1
+config_file = "config.toml"
+concurrent_runs = 2
+objective_seed_start = 42
+noise_seed_start = 123
+
+[prompts]
+control = "prompts/control.txt"
+interact = "prompts/interact.txt"
