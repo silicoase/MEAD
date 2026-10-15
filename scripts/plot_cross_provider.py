@@ -161,6 +161,7 @@ MODEL_NAMES = {
     "anthropic/claude-haiku-5.5": "Claude Haiku 5.5",
     "openai/gpt-5.6-luna": "OpenAI GPT-5.6 Luna",
     "openai/gpt-6-luna": "OpenAI GPT-6 Luna",
+    "openai/gpt-6.1-sol": "OpenAI GPT-6.1 Sol",
     "google/gemini-3.8-flash": "Google Gemini 3.8 Flash",
     "google/gemini-3.1-flash-lite": "Gemini 3.1 Flash-Lite",
     "qwen/qwen3-next-80b-a3b-instruct": "Qwen3 Next 80B A3B Instruct",
@@ -185,6 +186,10 @@ METRICS = {
     "peer_reads": "Peer-file reads",
     "peer_mentions": "Other-agent mentions",
     "specific_mentions": "Specific-agent mentions",
+    "reasoning_mentions": "Internal reasoning: other-agent mentions",
+    "reasoning_specific_mentions": "Internal reasoning: specific-agent mentions",
+    "assistant_message_mentions": "Internal messages: other-agent mentions",
+    "assistant_message_specific_mentions": "Internal messages: specific-agent mentions",
     "discovered_peer_result": "Listed a peer’s experiment result",
     "discovered_peer_note": "Listed a peer’s notebook",
     "discovered_either": "Listed either peer artifact",
@@ -351,7 +356,7 @@ def pair_has_terminal_task_data(batch, pair):
 def collect(batch, output):
     # Reevaluate measurements with the objective code archived with this exact batch.
     sys.path.insert(0, str(batch / "inputs/code/src"))
-    from summarize_collaboration import analyze_discoveries, analyze_events
+    from summarize_collaboration import analyze_discoveries, analyze_events, analyze_mention_channels
 
     from mad.config import TaskConfig
     from mad.task import SyntheticObjective
@@ -433,6 +438,8 @@ def collect(batch, output):
             for a in json.loads((directory / "identities.json").read_text())
         }
         reads, mentions = analyze_events(events, ownership, identities)
+        channels, reasoning_coverage = analyze_mention_channels(events, identities)
+        mentions = channels["shared_notes"]
         discoveries = analyze_discoveries(events, identities)
         costs, missing_costs = cost_events(events)
         interactions = {}
@@ -444,6 +451,12 @@ def collect(batch, output):
                 [m for m in mentions if any(x["tag"] == "peer_id" for x in m["excerpts"])],
             ),
             *discoveries.items(),
+            ("reasoning_mentions", channels["reasoning"]),
+            ("reasoning_specific_mentions", [m for m in channels["reasoning"]
+                                            if any(x["tag"] == "peer_id" for x in m["excerpts"])]),
+            ("assistant_message_mentions", channels["assistant_messages"]),
+            ("assistant_message_specific_mentions", [m for m in channels["assistant_messages"]
+                                                    if any(x["tag"] == "peer_id" for x in m["excerpts"])]),
             ("wait_calls", [e for e in events if e["kind"] == "tool_called" and e["tool"] == "wait"]),
             ("cost_usd", costs),
         ]:
@@ -469,6 +482,8 @@ def collect(batch, output):
             {
                 "run_id": entry["run_id"],
                 "model": entry["model_key"],
+                "reasoning_text_coverage": reasoning_coverage,
+                "mention_channel_evidence": channels,
                 "condition": entry["condition"],
                 "repetition": entry["repetition"],
                 "agents": config["agents"],
@@ -607,9 +622,12 @@ def collect(batch, output):
             "Mean indicator over all allocated agents, then equal-weight mean across runs. "
             "Listing is observable exposure, not proof the agent understood or read the file. "
             "Python listings are excluded.",
-            "interactions": "Logged peer file-tool reads; peer-mention candidate responses; "
-            "specific-ID mentions are a subset. Excludes Python bulk reads. "
-            "Reasoning availability varies by provider. Candidate counts are not verified interaction.",
+            "interactions": "External mentions count successful write_file/append_file operations "
+            "to /lab/notes containing peer language or a specific peer ID. Failed writes and private "
+            "files are excluded. Internal reasoning and ordinary assistant messages are separate "
+            "one-per-response measures. Specific-ID mentions are a subset within each channel. "
+            "Excludes Python bulk file access. Reasoning-text coverage is recorded per run; "
+            "unavailable reasoning is unknown, not evidence of no internal mentions.",
         },
         "objective_source_sha256": hashlib.sha256(
             (batch / "inputs/code/src/mad/task.py").read_bytes()
@@ -959,7 +977,7 @@ def render_gallery(output, data, catalog):
         gallery += f'<fieldset><legend>{esc({"model":"Models", "axis":"Time axes", "condition":"Conditions"}[group])}</legend><div class="choices">'
         for value, label in options.items():
             unavailable = group == "model" and value not in available_models
-            checked = ' checked' if not unavailable and (group != "axis" or value == "time") else ''
+            checked = ' checked' if not unavailable and (group != "axis" or value == "budget") else ''
             disabled = ' disabled' if unavailable else ''
             caption = label + ' (unavailable)' if unavailable else label
             gallery += f'<label><input type="checkbox" data-filter="{group}" value="{esc(value)}"{checked}{disabled}> {esc(caption)}</label>'

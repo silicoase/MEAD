@@ -13,7 +13,7 @@ class PauseLimitExceeded(RuntimeError):
 
 
 def new_account_reset_delay(error):
-    """Only the explicit OpenRouter new-account 429 activates this policy."""
+    """Recover explicit account and transient shared-provider-pool rate limits."""
     if getattr(error, "status_code", None) != 429:
         return None
     body = getattr(error, "body", None)
@@ -21,7 +21,9 @@ def new_account_reset_delay(error):
         return None
     payload = body.get("error", body)
     metadata = payload.get("metadata", {}) if isinstance(payload, dict) else {}
-    if not isinstance(metadata, dict) or metadata.get("limit_source") != "openrouter_new_account":
+    if not isinstance(metadata, dict) or metadata.get("limit_source") not in {
+        "openrouter_new_account", "upstream_provider_shared_pool"
+    }:
         return None
     raw_headers = metadata.get("headers", {})
     headers = (
@@ -31,6 +33,10 @@ def new_account_reset_delay(error):
     if response is not None:
         headers.update({k.lower(): v for k, v in response.headers.items()})
     delays = []
+    try:
+        delays.append(float(metadata["retry_after_seconds"]))
+    except (KeyError, ValueError, TypeError):
+        pass
     try:
         reset = float(headers["x-ratelimit-reset"])
         if reset > 100_000_000_000:

@@ -86,6 +86,7 @@ async def check(config_path, output):
         if all(r["exit_code"] == 0 and not r["timed_out"] for r in results)
         else "failed",
     }
+    output.parent.mkdir(parents=True, exist_ok=True)
     write_json(output, report)
     print(
         json.dumps(

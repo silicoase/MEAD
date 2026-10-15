@@ -19,13 +19,18 @@ def error(source="openrouter_new_account", status=429, **headers):
     )
 
 
-def test_only_exact_platform_limit_and_real_reset(monkeypatch):
+def test_supported_rate_limits_and_real_reset(monkeypatch):
     monkeypatch.setattr(time, "time", lambda: 1_700_000_000)
     assert new_account_reset_delay(error(**{"X-RateLimit-Reset": "1700000030000"})) == 31
     assert new_account_reset_delay(error(**{"X-RateLimit-Reset": "1700000030"})) == 31
     assert new_account_reset_delay(error(**{"Retry-After": "12"})) == 13
     assert new_account_reset_delay(error(**{"X-RateLimit-Reset": "999"})) == 60
     assert new_account_reset_delay(error(source="upstream")) is None
+    assert new_account_reset_delay(error(source="upstream_provider_shared_pool", **{"Retry-After": "28"})) == 29
+    assert new_account_reset_delay(error(source="upstream_provider_shared_pool")) == 60
+    provider = error(source="upstream_provider_shared_pool")
+    provider.body["error"]["metadata"]["retry_after_seconds"] = 61
+    assert new_account_reset_delay(provider) == 62
     assert new_account_reset_delay(error(status=503)) is None
     assert new_account_reset_delay(SimpleNamespace(status_code=429, body=None)) is None
     assert new_account_reset_delay(error(**{"Retry-After": "nan"})) == 60
@@ -185,8 +190,9 @@ async def test_pause_preserves_noise_scores_writes_and_budgets(tmp_path):
 
 
 @pytest.mark.parametrize("population", [1, 10])
+@pytest.mark.parametrize("limit_source", ["openrouter_new_account", "upstream_provider_shared_pool"])
 async def test_http_recovery_preserves_both_conditions_and_never_replays_tools(
-    tmp_path, monkeypatch, population
+    tmp_path, monkeypatch, population, limit_source
 ):
     import httpx2 as httpx
     from openai import AsyncOpenAI
@@ -257,7 +263,7 @@ async def test_http_recovery_preserves_both_conditions_and_never_replays_tools(
                                 "message": "temporary",
                                 "code": 429,
                                 "metadata": {
-                                    "limit_source": "openrouter_new_account",
+                                    "limit_source": limit_source,
                                     "headers": {"Retry-After": "1"},
                                 },
                             }

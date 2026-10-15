@@ -1,0 +1,16 @@
+schema_version = 3
+name = "cross-provider-25-full"
+conditions = ["control", "interact"]
+repetitions = 25
+concurrent_runs = 2
+objective_seed_start = 3000
+noise_seed_start = 4000
+
+[prompts]
+control = "prompts/control.txt"
+interact = "prompts/interact.txt"
+
+[model_configs]
+haiku = "haiku/config.toml"
+luna6 = "luna6/config.toml"
+sol61 = "sol61/config.toml"

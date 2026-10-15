@@ -106,6 +106,60 @@ def analyze_events(events, ownership, identities):
     return reads, mentions
 
 
+def analyze_mention_channels(events, identities):
+    """Successful shared-note operations versus private response content."""
+    channels = {name: [] for name in ("shared_notes", "reasoning", "assistant_messages")}
+    coverage = {"responses": 0, "responses_with_reasoning_text": 0}
+    pending, seen = {}, set()
+
+    def record(channel, event, texts):
+        excerpts = []
+        for source, text in texts:
+            match = PEER_WORDS.search(text)
+            tags = [("explicit_peer_language", match.start())] if match else []
+            tags += [("peer_id", pos) for pos in specific_references(text, event["agent"], identities)]
+            excerpts.extend({"source": source, "tag": tag,
+                             "excerpt": text[max(0, pos - 100):pos + 250]}
+                            for tag, pos in tags)
+        if excerpts:
+            channels[channel].append({"agent": event["agent"], "sequence": event["sequence"],
+                                      "elapsed_seconds": event["elapsed_seconds"],
+                                      "excerpts": excerpts})
+
+    for event in events:
+        kind = event["kind"]
+        if kind == "tool_called":
+            pending[event["agent"]] = event
+        elif kind == "tool_cancelled":
+            pending.pop(event["agent"], None)
+        elif kind == "tool_result":
+            call = pending.pop(event["agent"], None)
+            result = event.get("result")
+            if not call or call["tool"] not in {"write_file", "append_file"}:
+                continue
+            args = call.get("arguments", {})
+            path = PurePosixPath(args.get("path", ""))
+            if (not path.is_relative_to("/lab/notes") or ".." in path.parts
+                    or path == PurePosixPath("/lab/notes")
+                    or not isinstance(result, dict) or "error" in result
+                    or not (result.get("written") or result.get("appended"))):
+                continue
+            record("shared_notes", event, [("successful_shared_note", args.get("content", ""))])
+        elif kind == "model_response":
+            identity = event.get("response_id") or (event["agent"], event["sequence"])
+            if identity in seen:
+                continue
+            seen.add(identity)
+            texts = list(authored_text(event.get("output", [])))
+            reasoning = [(source, text) for source, text in texts if source.startswith("reasoning_")]
+            messages = [(source, text) for source, text in texts if source == "message"]
+            coverage["responses"] += 1
+            coverage["responses_with_reasoning_text"] += bool(reasoning)
+            record("reasoning", event, reasoning)
+            record("assistant_messages", event, messages)
+    return channels, coverage
+
+
 def analyze_discoveries(events, identities):
     """First successful listing showing a known peer's artifact, per agent/type."""
     pending = {}

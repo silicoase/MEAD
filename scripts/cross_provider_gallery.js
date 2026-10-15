@@ -168,7 +168,7 @@ if (typeof document !== 'undefined') {
   layoutControl.addEventListener('change',render);
   contrastControl.addEventListener('change',()=>{zooms.clear();render();});
   inputs.forEach(i=>i.addEventListener('change',render));
-  document.getElementById('compare-models').addEventListener('click',()=>{layoutControl.value='panels';if(!selected('axis').length||selected('axis').length>1)choose('axis',['time']);render();});
+  document.getElementById('compare-models').addEventListener('click',()=>{layoutControl.value='panels';if(!selected('axis').length||selected('axis').length>1)choose('axis',['budget']);render();});
   document.getElementById('compare-times').addEventListener('click',()=>{choose('axis',Object.keys(data.axes));if(selected('model').length!==1)choose('model',[selected('model')[0]||data.models[0]]);layoutControl.value='panels';render();});
   document.getElementById('overlay-models').addEventListener('click',()=>{layoutControl.value='overlay';render();});
   document.getElementById('reset-zoom').addEventListener('click',()=>{zooms.clear();render();});

@@ -122,6 +122,33 @@ def test_discovery_is_first_listing_per_agent_and_type_with_either_as_union():
     assert discoveries["discovered_peer_result"][0]["path"] == "/lab/runs/result.json"
 
 
+def test_mentions_separate_successful_notes_reasoning_and_messages():
+    response = {"kind": "model_response", "agent": 0, "sequence": 1,
+                "elapsed_seconds": 1, "response_id": "response", "output": [
+                    {"type": "reasoning", "content": [{"text": "Other agents abcd1234"}]},
+                    {"type": "message", "content": [{"type": "output_text", "text": "Other agents"}]},
+                    {"type": "function_call", "name": "write_file",
+                     "arguments": '{"path":"/lab/notes/own.md","content":"Other agents"}'}]}
+    events = [response, response]
+    for index, (path, result) in enumerate([
+        ("/lab/notes/own.md", {"written": "/lab/notes/own.md"}),
+        ("/lab/notes/own.md", {"error": "denied"}),
+        ("/workspace/private.md", {"written": "/workspace/private.md"}),
+        ("/lab/notes/../private.md", {"written": "/lab/private.md"}),
+    ]):
+        events.extend([
+            {"kind": "tool_called", "agent": 0, "sequence": 2 + index * 2,
+             "tool": "write_file", "arguments": {"path": path, "content": "Other agents abcd1234"}},
+            {"kind": "tool_result", "agent": 0, "sequence": 3 + index * 2,
+             "elapsed_seconds": 2, "result": result}])
+    channels, coverage = module.analyze_mention_channels(events, {0: "aaaa0000", 1: "abcd1234"})
+    assert {key: len(value) for key, value in channels.items()} == {
+        "shared_notes": 1, "reasoning": 1, "assistant_messages": 1}
+    assert channels["shared_notes"][0]["sequence"] == 3
+    assert any(e["tag"] == "peer_id" for e in channels["shared_notes"][0]["excerpts"])
+    assert coverage == {"responses": 1, "responses_with_reasoning_text": 1}
+
+
 def test_unknown_authors_and_cancelled_listings_are_not_discoveries():
     events = [
         {"kind": "tool_called", "tool": "list_files", "agent": 0,
