@@ -1,7 +1,10 @@
 # Three-model, 25-set experiment
 
-Prepared at the user's request on 2026-10-13. **No preflight, pilot, or full run
-has been launched. Wait for the user to check back before live execution.**
+Prepared at the user's request on 2026-10-13. **Completed and audited.**
+The accepted full batch is `outputs/cross-provider-25-full/run-02`; all 150 runs
+and 1,500 submissions finished. Data transfer is verified, monitoring is paused,
+and local tracker servers have been retired. Continue with offline analysis;
+this handoff does not authorize new scientific runs.
 
 Models: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`), GPT-6 Luna
 (`openai/gpt-6-luna`), and GPT-6.1 Sol (`openai/gpt-6.1-sol`). GLM is excluded.
@@ -30,30 +33,16 @@ time limit. Historical definitions and output snapshots retain their old caps.
 Both dry runs passed. Model configurations were checked for identical settings
 apart from their model routes, including the 90-minute freeze allowance.
 
-## When the user returns
+## Execution history
 
-From the MEAD repository root, the small paid compatibility preflight is:
+The compatibility preflight and one-pair-per-model pilot completed before the
+full experiment. The first full attempt (`run-01`) failed on shared-provider-pool
+429s. The user authorized a recovery fix and a fresh attempt (`run-02`), which
+completed. Recovery recognizes explicit account and shared-provider-pool limits
+and respects reset metadata; the cumulative pause cap remains 90 minutes.
 
-```sh
-uv run --locked mad preflight experiments/cross-provider-25/pilot.toml --batch --output outputs/cross-provider-25-preflight
-```
-
-The pilot command is:
-
-```sh
-uv run --locked mad batch experiments/cross-provider-25/pilot.toml --output outputs/cross-provider-25-pilot/run-01
-```
-
-Use a persistent runner and fresh output directories when launching. Start live
-tracking and monitoring at that time. If a directory already exists, preserve it
-and choose a new attempt name. Report actual submissions, errors, API freezes,
-reported costs and missing receipts. Compute per-model cost ×25 for the full-run
-estimate. Do not launch the full experiment merely because the pilot finishes.
-
-The full definition is `experiments/cross-provider-25/experiment.toml`.
-The OpenRouter key remains in the ignored local `.env`; no credentials are
-included here. The existing `mad-python:local` sandbox image and locked Python
-environment were used for the completed prior experiment.
+Historical definitions, failed-attempt evidence, and pilot results are retained.
+Do not rerun completed sets or mix attempts into the accepted scientific batch.
 
 ## Analysis
 
@@ -75,19 +64,35 @@ cost receipts or coordinated-pause audit violations. `run-01` is a preserved
 failed attempt and must not be pooled into the accepted scientific results.
 Pilot data are separate. GLM is excluded.
 
-Code belongs in Git; generated data and archives are ignored. To work elsewhere,
-transfer the accepted raw batch while preserving its relative directory layout,
-plus `outputs/cross-provider-review/three-model-25-full` for the existing analysis.
-A private Hugging Face dataset repository is suitable for a versioned data copy.
-Record its exact revision and the code commit together, and include SHA-256
-checksums for transferred files. Do not include `.env`, API keys, or virtualenvs.
-Keep failed-attempt evidence in a clearly separate provenance directory.
+## Verified private dataset
+
+- Dataset: https://huggingface.co/datasets/connacher-silicoase/MEAD-cross-provider
+- Visibility: private; publication is a separate decision.
+- Pinned data revision: `694e77881e3ed9b97d140e7434917a91c9f36222`
+- Source code snapshot: `c538ff6` on `codex/small-cross-provider-experiment`.
+- Eight uploaded files verified by size and SHA-256: remote LFS hashes for
+  large files and downloaded content hashes for small files.
+
+Code belongs in Git; generated data and archives are ignored. Authenticate on
+the destination machine, then download the pinned snapshot:
+
+```sh
+hf auth login
+hf download connacher-silicoase/MEAD-cross-provider --repo-type dataset --revision 694e77881e3ed9b97d140e7434917a91c9f36222 --local-dir mead-data
+```
+
+Verify `SHA256SUMS` inside `mead-data` (`shasum -a 256 -c SHA256SUMS` on macOS).
+From the MEAD checkout, extract `raw-results.tar.gz` and `analysis.tar.gz` using
+their full paths. Archives preserve repository-relative output paths.
+`attempt-provenance.tar.gz` contains the excluded failed attempt and audit
+provenance; extract separately when needed. `source.tar.gz` is an alternative
+to cloning the pinned source commit. No credentials or virtualenvs are included.
 
 On the other machine, clone this code branch and restore the output directories,
 then install the locked analysis environment and regenerate:
 
 ```sh
-uv sync --group analysis
+uv sync --locked --group analysis --python 3.14
 uv run python scripts/plot_cross_provider.py collect outputs/cross-provider-review/three-model-25-full/figures --batch outputs/cross-provider-25-full/run-02
 uv run python scripts/plot_cross_provider.py plot outputs/cross-provider-review/three-model-25-full/figures
 uv run python scripts/plot_blog_panels.py outputs/cross-provider-review/three-model-25-full/figures outputs/cross-provider-25-full/run-02 outputs/cross-provider-review/three-model-25-full/blog-panels
