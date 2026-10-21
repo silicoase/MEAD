@@ -124,3 +124,17 @@ async def test_cancelled_experiment_consumes_budget_and_preserves_event(tmp_path
         assert events[0]["kind"] == "experiment_started"
     finally:
         recorder.close()
+
+
+def test_start_stagger_generates_offsets_and_survives_snapshot_reload():
+    config = RolloutConfig(agents=4, start_stagger_seconds=1)
+    assert config.start_offsets_seconds == [0, 1, 2, 3]
+    assert RolloutConfig.model_validate(config.model_dump()).start_offsets_seconds == [0, 1, 2, 3]
+    assert RolloutConfig(agents=4, start_stagger_seconds=0).start_offsets_seconds == [0, 0, 0, 0]
+    assert RolloutConfig(agents=3, start_stagger_seconds=.5).start_offsets_seconds == [0, .5, 1]
+    assert RolloutConfig(agents=2, start_offsets_seconds=[0, 5]).start_offsets_seconds == [0, 5]
+    with pytest.raises(ValidationError):
+        RolloutConfig(agents=2, start_stagger_seconds=1, start_offsets_seconds=[0, 0])
+    for invalid in [-1, float("inf"), float("nan")]:
+        with pytest.raises(ValidationError):
+            RolloutConfig(start_stagger_seconds=invalid)

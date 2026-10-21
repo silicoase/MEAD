@@ -2,34 +2,46 @@ import asyncio
 import os
 import platform
 import sys
+from contextlib import nullcontext
 from importlib.metadata import version
 from pathlib import Path
 
 from .config import RolloutConfig
 from .environment import DockerEnvironment, docker
-from .harness import OpenAIHarness, ScriptedHarness, ScriptedTurnLimit
+from .harness import OpenAIHarness, OpenRouterHarness, ScriptedHarness, ScriptedTurnLimit
+from .pause import PairPause
 from .recording import Recorder, write_json
 from .task import OptimizationTask
 from .tools import ToolService
 
 
-async def run_rollout(config: RolloutConfig, output: Path) -> dict:
+async def run_rollout(config: RolloutConfig, output: Path, *, pause=None) -> dict:
     if config.harness.kind == "openai" and not os.environ.get("OPENAI_API_KEY"):
         raise ValueError(
             "OPENAI_API_KEY is required for the openai harness; scripted mode needs no key"
         )
+    if config.harness.kind == "openrouter" and not os.environ.get("OPENROUTER_API_KEY"):
+        raise ValueError("OPENROUTER_API_KEY is required for the openrouter harness")
     extra_instructions = (
         config.task.instructions_file.read_text() if config.task.instructions_file else ""
     )
     output.mkdir(parents=True, exist_ok=False)
     write_json(output / "config.json", config.model_dump(mode="json"))
-    recorder = Recorder(output)
+    owns_pause = config.harness.coordinated_pause and pause is None
+    if owns_pause:
+        pause = PairPause(config.harness.max_pause_seconds)
+    recorder = Recorder(output, pause=pause)
     environment = DockerEnvironment(config)
+    if pause:
+        pause.environments.add(environment)
     task = OptimizationTask(config, environment, recorder)
     service = ToolService(task, environment, recorder, config.agents)
-    harness = (OpenAIHarness if config.harness.kind == "openai" else ScriptedHarness)(
-        config, service, recorder
-    )
+    harness_type = {
+        "openai": OpenAIHarness,
+        "openrouter": OpenRouterHarness,
+        "scripted": ScriptedHarness,
+    }[config.harness.kind]
+    harness = harness_type(config, service, recorder)
     instructions = task.instructions(config.experiment_budget)
     if extra_instructions:
         instructions += "\n\n" + extra_instructions
@@ -48,7 +60,10 @@ async def run_rollout(config: RolloutConfig, output: Path) -> dict:
     reports = {}
 
     async def run_agent(agent: int):
-        await asyncio.sleep(config.start_offsets_seconds[agent])
+        if pause:
+            await pause.sleep(config.start_offsets_seconds[agent])
+        else:
+            await asyncio.sleep(config.start_offsets_seconds[agent])
         recorder.emit(
             "agent_started",
             agent,
@@ -57,7 +72,11 @@ async def run_rollout(config: RolloutConfig, output: Path) -> dict:
         )
         result = {}
         try:
-            async with asyncio.timeout(config.timeout_seconds):
+            async with (
+                pause.timeout(config.timeout_seconds)
+                if pause
+                else asyncio.timeout(config.timeout_seconds)
+            ):
                 result = await harness.run(agent, agent_instructions[agent])
         except TimeoutError:
             result = {"reason": "time_limit"}
@@ -65,6 +84,8 @@ async def run_rollout(config: RolloutConfig, output: Path) -> dict:
             result = {"reason": "turn_limit"}
         except asyncio.CancelledError:
             result = {"reason": "cancelled"}
+            if pause:
+                await pause.abort()
             raise
         except Exception as error:
             from agents import MaxTurnsExceeded
@@ -72,10 +93,13 @@ async def run_rollout(config: RolloutConfig, output: Path) -> dict:
             result = {
                 "reason": "turn_limit" if isinstance(error, MaxTurnsExceeded) else "error",
                 "error": str(error),
+                "error_kind": getattr(error, "error_kind", type(error).__name__),
             }
         finally:
-            # Kill remaining Python processes before archiving, including escaped descendants.
-            await environment.stop_agent(agent)
+            # Cleanup must await thaw, but must not be rejected by the pause-budget gate.
+            async with pause.operation(cleanup=True) if pause else nullcontext():
+                # Kill remaining Python processes, including escaped descendants.
+                await environment.stop_agent(agent)
             report = dict(
                 agent=agent,
                 author_id=environment.author_ids[agent],
@@ -88,39 +112,56 @@ async def run_rollout(config: RolloutConfig, output: Path) -> dict:
         return report
 
     try:
-        await environment.start(agent_instructions)
-        started = True
-        image = await docker("image", "inspect", "--format", "{{.Id}}", config.environment.image)
-        write_json(
-            output / "runtime.json",
-            dict(
-                python=sys.version,
-                platform=platform.platform(),
-                sdk_version=version("openai-agents"),
-                image_id=image.decode().strip(),
-            ),
-        )
+        async with pause.operation() if pause else nullcontext():
+            await environment.start(agent_instructions)
+            started = True
+            image = await docker(
+                "image", "inspect", "--format", "{{.Id}}", config.environment.image
+            )
+            write_json(
+                output / "runtime.json",
+                dict(
+                    python=sys.version,
+                    platform=platform.platform(),
+                    sdk_version=version("openai-agents"),
+                    image_id=image.decode().strip(),
+                ),
+            )
         recorder.emit("rollout_started", config=config.model_dump(mode="json"))
         async with asyncio.TaskGroup() as group:
             jobs = [group.create_task(run_agent(i)) for i in range(config.agents)]
         summary["agents"] = [job.result() for job in jobs]
     except BaseException as error:
+        if pause and isinstance(error, asyncio.CancelledError):
+            # Covers cancellation during startup or initial staggering too.
+            await pause.abort()
         recorder.emit("rollout_failed", error=str(error), error_type=type(error).__name__)
         raise
     finally:
-        try:
-            if started:
-                # Stop all containers before final snapshot even on interruption.
-                for i in environment.containers:
-                    await environment.stop_agent(i)
-                await environment.snapshot(output)
-                summary["agents"] = [reports[i] for i in sorted(reports)]
-                summary["experiment_records"] = task.records
-                summary["submissions"] = task.submissions
-                write_json(output / "summary.json", summary)
-        finally:
+        async with pause.operation(cleanup=True) if pause else nullcontext():
+            if pause:
+                pause.environments.discard(environment)
             try:
-                await environment.close()
+                if started:
+                    # Stop all containers before final snapshot even on interruption.
+                    for i in environment.containers:
+                        await environment.stop_agent(i)
+                    await environment.snapshot(output)
+                    summary["agents"] = [reports[i] for i in sorted(reports)]
+                    summary["experiment_records"] = task.records
+                    summary["submissions"] = task.submissions
+                    write_json(output / "summary.json", summary)
             finally:
-                recorder.close()
+                try:
+                    await environment.close()
+                finally:
+                    try:
+                        if isinstance(harness, OpenAIHarness):
+                            await harness.close()
+                    finally:
+                        if pause:
+                            pause.environments.discard(environment)
+                        recorder.close()
+        if owns_pause:
+            await pause.close()
     return summary

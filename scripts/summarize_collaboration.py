@@ -17,7 +17,8 @@ PEER_WORDS = re.compile(
 ID_REFERENCE = re.compile(r"\b(?P<label>agent\s*)?(?P<id>[0-9a-f]{4,32})\b", re.I)
 
 
-def specific_references(text, agent, identities):
+def specific_reference_owners(text, agent, identities):
+    """(position, referenced peer) for each unambiguous mention of another agent's ID."""
     for match in ID_REFERENCE.finditer(text):
         prefix = match["id"].lower()
         # Avoid treating short decimal numbers as IDs unless labeled "agent".
@@ -25,16 +26,41 @@ def specific_references(text, agent, identities):
             continue
         owners = [owner for owner, identity in identities.items() if identity.startswith(prefix)]
         if len(owners) == 1 and owners[0] != agent:
-            yield match.start()
+            yield match.start(), owners[0]
+
+
+def specific_references(text, agent, identities):
+    for position, _ in specific_reference_owners(text, agent, identities):
+        yield position
+
+
+def new_mention_tags(text, previous, agent, identities):
+    """Mention tags in text beyond those already in previous (a note's prior version)."""
+    words = list(PEER_WORDS.finditer(text))
+    old_words = len(PEER_WORDS.findall(previous))
+    tags = [("explicit_peer_language", words[old_words].start())] if len(words) > old_words else []
+    old_refs = {}
+    for _, owner in specific_reference_owners(previous, agent, identities):
+        old_refs[owner] = old_refs.get(owner, 0) + 1
+    seen = {}
+    for position, owner in specific_reference_owners(text, agent, identities):
+        seen[owner] = seen.get(owner, 0) + 1
+        if seen[owner] > old_refs.get(owner, 0):
+            tags.append(("peer_id", position))
+    return tags
 
 
 def authored_text(output):
     """Exclude supplied prompts, tool results, opaque reasoning, and Python code."""
     for item in output:
         if item.get("type") == "reasoning":
-            for part in item.get("summary", []):
-                if part.get("text"):
-                    yield "reasoning_summary", part["text"]
+            seen = set()
+            for field, source in [("summary", "reasoning_summary"), ("content", "reasoning_text")]:
+                for part in item.get(field, []) or []:
+                    text = part.get("text")
+                    if text and text not in seen:
+                        seen.add(text)
+                        yield source, text
         elif item.get("type") == "message":
             for part in item.get("content", []):
                 if part.get("type") == "output_text" and part.get("text"):
@@ -100,6 +126,109 @@ def analyze_events(events, ownership, identities):
                                      elapsed_seconds=event["elapsed_seconds"],
                                      response_id=response_id, excerpts=excerpts))
     return reads, mentions
+
+
+def analyze_mention_channels(events, identities):
+    """Successful shared-note operations versus private response content."""
+    channels = {name: [] for name in ("shared_notes", "reasoning", "assistant_messages")}
+    coverage = {"responses": 0, "responses_with_reasoning_text": 0}
+    pending, seen = {}, set()
+
+    notes = {}  # (agent, note name) -> current content, to see what a rewrite adds
+
+    def record(channel, event, texts, previous=""):
+        excerpts = []
+        for source, text in texts:
+            tags = new_mention_tags(text, previous, event["agent"], identities)
+            excerpts.extend({"source": source, "tag": tag,
+                             "excerpt": text[max(0, pos - 100):pos + 250]}
+                            for tag, pos in tags)
+        if excerpts:
+            channels[channel].append({"agent": event["agent"], "sequence": event["sequence"],
+                                      "elapsed_seconds": event["elapsed_seconds"],
+                                      "excerpts": excerpts})
+
+    for event in events:
+        kind = event["kind"]
+        if kind == "tool_called":
+            pending[event["agent"]] = event
+        elif kind == "tool_cancelled":
+            pending.pop(event["agent"], None)
+        elif kind == "tool_result":
+            call = pending.pop(event["agent"], None)
+            result = event.get("result")
+            if not call or call["tool"] not in {"write_file", "append_file"}:
+                continue
+            args = call.get("arguments", {})
+            path = PurePosixPath(args.get("path", ""))
+            if (not path.is_relative_to("/lab/notes") or ".." in path.parts
+                    or path == PurePosixPath("/lab/notes")
+                    or not isinstance(result, dict) or "error" in result
+                    or not (result.get("written") or result.get("appended"))):
+                continue
+            content = args.get("content", "")
+            key = (event["agent"], path.name)
+            if call["tool"] == "append_file":
+                record("shared_notes", event, [("successful_shared_note", content)])
+                notes[key] = notes.get(key, "") + content
+            else:
+                # A rewrite repeats the note's earlier text; count only mentions it adds.
+                record("shared_notes", event, [("successful_shared_note", content)],
+                       previous=notes.get(key, ""))
+                notes[key] = content
+        elif kind == "model_response":
+            identity = event.get("response_id") or (event["agent"], event["sequence"])
+            if identity in seen:
+                continue
+            seen.add(identity)
+            texts = list(authored_text(event.get("output", [])))
+            reasoning = [(source, text) for source, text in texts if source.startswith("reasoning_")]
+            messages = [(source, text) for source, text in texts if source == "message"]
+            coverage["responses"] += 1
+            coverage["responses_with_reasoning_text"] += bool(reasoning)
+            record("reasoning", event, reasoning)
+            record("assistant_messages", event, messages)
+    return channels, coverage
+
+
+def analyze_discoveries(events, identities):
+    """First successful listing showing a known peer's artifact, per agent/type."""
+    pending = {}
+    owners = {identity: agent for agent, identity in identities.items()}
+    discoveries = {key: [] for key in ("discovered_peer_result", "discovered_peer_note", "discovered_either")}
+    seen = {key: set() for key in discoveries}
+    for event in events:
+        agent, kind = event.get("agent"), event["kind"]
+        if kind == "tool_called":
+            pending[agent] = event
+        elif kind == "tool_cancelled":
+            pending.pop(agent, None)
+        elif kind == "tool_result":
+            call = pending.pop(agent, None)
+            result = event.get("result")
+            if not call or call["tool"] != "list_files" or not isinstance(result, list):
+                continue
+            path = PurePosixPath(call.get("arguments", {}).get("path", ""))
+            category = {
+                PurePosixPath("/lab/runs"): "discovered_peer_result",
+                PurePosixPath("/lab/notes"): "discovered_peer_note",
+            }.get(path)
+            if category is None:
+                continue
+            for entry in result:
+                peer = owners.get(entry.get("author_id"))
+                if peer is None or peer == agent or entry.get("directory") is not False:
+                    continue
+                evidence = dict(agent=agent, peer=peer, path=str(path / entry["name"]),
+                                artifact="measurement" if category == "discovered_peer_result" else "note",
+                                sequence=event["sequence"], call_sequence=call["sequence"],
+                                elapsed_seconds=event["elapsed_seconds"])
+                for key in (category, "discovered_either"):
+                    if agent not in seen[key]:
+                        seen[key].add(agent)
+                        discoveries[key].append(evidence.copy())
+                break
+    return discoveries
 
 
 def collect(batch, output):

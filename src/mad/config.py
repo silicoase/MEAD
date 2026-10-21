@@ -10,9 +10,22 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
 
+class ModelRoute(StrictModel):
+    model: str = Field(pattern=r"^[^\s/]+/[^\s]+$")
+    provider: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9/._-]*$")
+
+
 class HarnessConfig(StrictModel):
-    kind: Literal["openai", "scripted"] = "openai"
+    kind: Literal["openai", "openrouter", "scripted"] = "openai"
     model: str = "gpt-4.1-mini"
+    routes: list[ModelRoute] = Field(default_factory=list)
+    max_tokens: int | None = Field(default=None, ge=1)
+    request_concurrency: int | None = Field(default=None, ge=1, le=1000)
+    continue_after_text_final: bool = False
+    coordinated_pause: bool = False
+    max_pause_seconds: float = Field(default=1800, gt=0, le=86400)
+    request_retries: int = Field(default=0, ge=0, le=5)
+    retry_backoff_seconds: float = Field(default=10, gt=0, le=60)
     reasoning_summary: Literal["auto", "concise", "detailed"] | None = None
 
 
@@ -52,6 +65,7 @@ class RolloutConfig(StrictModel):
     note_author_headers: bool = True
     note_timestamps: bool = False
     experiment_duration_seconds: float = Field(default=0, ge=0)
+    start_stagger_seconds: float = Field(default=0, ge=0)
     start_offsets_seconds: list[float] = Field(default_factory=list)
     tools: list[
         Literal[
@@ -84,10 +98,22 @@ class RolloutConfig(StrictModel):
 
     @model_validator(mode="after")
     def offsets(self):
+        if self.harness.coordinated_pause and self.harness.kind != "openrouter":
+            raise ValueError("coordinated_pause requires the openrouter harness")
+        if self.harness.kind == "openrouter":
+            if len(self.harness.routes) not in (1, self.agents):
+                raise ValueError("openrouter needs one shared route or one route per agent")
+            if self.harness.reasoning_summary is not None:
+                raise ValueError("reasoning_summary is only supported by the openai harness")
+        elif self.harness.routes:
+            raise ValueError("routes are only supported by the openrouter harness")
         if "submit" not in self.tools or len(set(self.tools)) != len(self.tools):
             raise ValueError("tools must include submit and contain no duplicates")
+        stagger_offsets = [agent * self.start_stagger_seconds for agent in range(self.agents)]
         if not self.start_offsets_seconds:
-            self.start_offsets_seconds = [0.0] * self.agents
+            self.start_offsets_seconds = stagger_offsets
+        elif self.start_stagger_seconds and self.start_offsets_seconds != stagger_offsets:
+            raise ValueError("start offsets conflict with start_stagger_seconds")
         if len(self.start_offsets_seconds) != self.agents:
             raise ValueError("provide one start offset per agent")
         if any(x < 0 or not math.isfinite(x) for x in self.start_offsets_seconds):

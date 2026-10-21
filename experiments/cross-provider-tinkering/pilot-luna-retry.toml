@@ -1,0 +1,14 @@
+schema_version = 3
+name = "cross-provider-luna-retry"
+conditions = ["control", "interact"]
+repetitions = 1
+concurrent_runs = 2
+objective_seed_start = 45
+noise_seed_start = 126
+
+[prompts]
+control = "prompts/control.txt"
+interact = "prompts/interact.txt"
+
+[model_configs]
+luna = "luna/config.toml"

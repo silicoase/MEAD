@@ -109,3 +109,113 @@ async def test_batch_snapshot_statuses_and_failure_stop(tmp_path, monkeypatch, f
     assert recorded["manifest.json"] == experiment.checksum(output / "manifest.json")
     with pytest.raises(FileExistsError):
         await experiment.run_experiment(spec, output)
+
+
+def make_matrix_spec(tmp_path):
+    spec = make_spec(tmp_path)
+    text = spec.read_text().replace('config_file = "config.toml"\n', "")
+    text = "schema_version = 3\n" + text
+    text += '\n[model_configs]\nfirst = "first.toml"\nsecond = "second.toml"\n'
+    spec.write_text(text)
+    for name in ("first", "second"):
+        (tmp_path / f"{name}.toml").write_text(
+            f'agents = 1\n[harness]\nkind = "scripted"\nmodel = "{name}"\n'
+        )
+    return spec
+
+
+def test_matrix_shares_seeds_across_models_and_conditions(tmp_path):
+    plan = experiment.validate_experiment(make_matrix_spec(tmp_path))
+    assert len(plan["runs"]) == 8
+    assert len({e["run_id"] for e in plan["runs"]}) == 8
+    for repetition in (1, 2):
+        entries = [e for e in plan["runs"] if e["repetition"] == repetition]
+        assert {(e["model_key"], e["condition"]) for e in entries} == {
+            ("first", "control"),
+            ("first", "aware"),
+            ("second", "control"),
+            ("second", "aware"),
+        }
+        assert {e["objective_seed"] for e in entries} == {43 + repetition}
+        assert {e["noise_seed"] for e in entries} == {124 + repetition}
+
+
+def test_matrix_rejects_unmatched_agent_counts(tmp_path):
+    spec = make_matrix_spec(tmp_path)
+    config = tmp_path / "second.toml"
+    config.write_text(config.read_text().replace("agents = 1", "agents = 2"))
+    with pytest.raises(ValueError, match="non-harness settings"):
+        experiment.validate_experiment(spec)
+
+
+@pytest.mark.parametrize("fail", [False, True])
+async def test_matrix_runs_pairs_sequentially_and_stops_after_failure(tmp_path, monkeypatch, fail):
+    import asyncio
+
+    inputs = tmp_path / "definitions"
+    inputs.mkdir()
+    spec = make_matrix_spec(inputs)
+    active = []
+    calls = []
+    max_active = 0
+
+    async def rollout(config, directory):
+        nonlocal max_active
+        active.append(config.harness.model)
+        max_active = max(max_active, len(active))
+        assert len(set(active)) == 1
+        calls.append(directory.name)
+        await asyncio.sleep(0.01)
+        active.remove(config.harness.model)
+        return {"agents": [{"reason": "error" if fail else "submitted", "true_objective": 1}]}
+
+    monkeypatch.setattr(experiment, "run_rollout", rollout)
+    monkeypatch.setattr(experiment, "export_review", lambda directory: None)
+    output = tmp_path / "output"
+    if fail:
+        with pytest.raises(RuntimeError, match="remaining runs not launched"):
+            await experiment.run_experiment(spec, output)
+    else:
+        await experiment.run_experiment(spec, output)
+    assert max_active == 2
+    assert len(calls) == (2 if fail else 8)
+    if not fail:
+        assert calls[:4] == [
+            "first-control-001",
+            "first-aware-001",
+            "second-control-001",
+            "second-aware-001",
+        ]
+    snapshot = output / "inputs/experiment"
+    assert experiment.validate_experiment(snapshot / "experiment.toml")["runs"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["status"] == ("error" if fail else "finished")
+    assert all(e["status"] == "pending" for e in manifest["runs"][2:]) if fail else True
+    assert "Model" in (output / "index.html").read_text()
+
+
+async def test_pause_is_shared_by_conditions_and_reset_between_matched_pairs(tmp_path, monkeypatch):
+    inputs = tmp_path / "definitions"
+    inputs.mkdir()
+    spec = make_spec(inputs)
+    (inputs / "config.toml").write_text('''agents = 1
+[harness]
+kind = "openrouter"
+coordinated_pause = true
+[[harness.routes]]
+model = "test/model"
+''')
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-only")
+    pauses = []
+    async def rollout(config, directory, *, pause):
+        assert config.harness.coordinated_pause
+        pauses.append(pause)
+        directory.mkdir()
+        (directory / "config.json").write_text("{}")
+        return {"agents": [{"reason": "submitted", "true_objective": 1}]}
+    monkeypatch.setattr(experiment, "run_rollout", rollout)
+    monkeypatch.setattr(experiment, "export_review", lambda directory: None)
+    await experiment.run_experiment(spec, tmp_path / "out")
+    assert pauses[0] is pauses[1]
+    assert pauses[2] is pauses[3]
+    assert pauses[0] is not pauses[2]

@@ -1,5 +1,6 @@
 import asyncio
 import math
+from contextlib import asynccontextmanager
 
 from .recording import Recorder
 from .task import Task
@@ -12,7 +13,22 @@ class ToolService:
         self.closed: set[int] = set()
         self.accesses: list[list[dict]] = [[] for _ in range(agents)]
 
+    @asynccontextmanager
+    async def admission(self):
+        if self.recorder.pause:
+            async with self.recorder.pause.operation():
+                yield
+        else:
+            yield
+
     async def call(self, agent: int, name: str, **arguments):
+        async with self.admission():
+            result = await self._call(agent, name, **arguments)
+        if self.recorder.pause and agent not in self.closed:
+            await self.recorder.pause.wait_open()
+        return result
+
+    async def _call(self, agent: int, name: str, **arguments):
         async with self.locks[agent]:
             self.recorder.emit("tool_called", agent, tool=name, arguments=arguments)
             try:

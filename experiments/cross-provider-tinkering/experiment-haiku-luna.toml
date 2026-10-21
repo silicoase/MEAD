@@ -1,0 +1,15 @@
+schema_version = 3
+name = "cross-provider-full-haiku-luna"
+conditions = ["control", "interact"]
+repetitions = 20
+concurrent_runs = 2
+objective_seed_start = 1000
+noise_seed_start = 2000
+
+[prompts]
+control = "prompts/control.txt"
+interact = "prompts/interact.txt"
+
+[model_configs]
+haiku = "haiku/config.toml"
+luna6 = "luna6/config.toml"

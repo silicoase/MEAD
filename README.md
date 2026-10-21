@@ -147,8 +147,11 @@ uv run --locked mad validate examples/openai.toml
 | `harness.reasoning_summary` | Optional provider reasoning summary: `auto`, `concise`, or `detailed` |
 | `note_author_headers` | Add automatic author headers to lab notes (default `true`) |
 | `experiment_duration_seconds` | Delay before a measurement becomes available |
+| `start_stagger_seconds` | Initial spacing between agents in seconds; 0 starts together. Generates offsets 0, s, 2s, … |
 | `start_offsets_seconds` | One delay per agent from the common launch point |
-| `harness.kind`, `harness.model` | `openai` or `scripted`; model used by OpenAI harness |
+| `harness.kind`, `harness.model` | `openai`, `openrouter`, or `scripted`; `model` is used by the OpenAI harness |
+| `harness.routes` | OpenRouter only: one shared `{model, provider}` route or one per agent; optional host pin; omitted host permits automatic provider routing |
+| `harness.max_tokens` | Optional positive per-completion output limit for model harnesses |
 | `tools` | Enabled tool names; must include `submit` |
 | `task.dimensions`, `task.lower`, `task.upper` | Numeric parameter count and common bounds |
 | `task.objective_seed`, `task.noise_seed`, `task.noise_std` | Objective generation and Gaussian observation noise |
@@ -287,3 +290,43 @@ Record change history in commits and pull requests.
 The project was previously named Measuring Agent Discovery (MAD). Existing
 `mad` commands, Python imports, and experiment identifiers remain compatible.
 The original license text retains its historical software name.
+
+For pinned multi-provider rollouts, see [the cross-provider pilot](examples/cross-provider/README.md).
+
+
+### Preflight and text-only endings
+
+Before a cross-provider batch, check every configured model with the actual tool
+schemas and model settings, using a two-turn `read_file` → `submit` exchange:
+
+```sh
+mad preflight experiments/cross-provider-tinkering/experiment.toml --batch
+```
+
+For one model use `mad preflight path/to/config.toml`. These are paid API checks,
+not scientific rollouts: no Docker, no measurements, at most two model turns per
+model and a 90-second deadline (or the configured timeout if shorter). Existing
+HTTP retry settings still apply. Results, actual providers and reported costs are
+saved under a separate `outputs/preflight-*` directory. A failed check exits with
+status 1. Preflight is an explicit command; `mad batch --dry-run` remains offline.
+
+`harness.request_concurrency` limits in-flight OpenRouter requests per rollout;
+omitting it permits one in-flight request per agent. For ten agents, use
+`request_concurrency = 10` to avoid the previous three-slot local queue. The
+current six-model configs use ten slots for the fresh matched pilot. This does not
+change the wall-clock deadline or retry behavior.
+
+Cross-provider configs enable `continue_after_text_final = true`. If a session
+returns text without a successful `submit`, it receives exactly one reminder:
+
+> Your session has not submitted a final configuration. Continue using the
+> available tools, and finish by calling submit(parameters).
+
+The entire history, tool service and remaining experiment budget are preserved.
+The continuation uses the remaining turns within the original wall-clock timeout;
+there is no continuation when no turns remain, and no recovery after a timeout or
+turn-limit exception. A second text ending still fails. The original text ending
+and reminder are recorded as `text_final_continuation`; completed harness reports
+also include `text_final_continuations_used` and `initial_termination_reason`.
+No final configuration is inferred from an experiment or prose. The option defaults
+to false for other configs and can be disabled to measure unassisted behavior.

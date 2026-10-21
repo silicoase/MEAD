@@ -74,3 +74,115 @@ def test_specific_references_allow_unique_prefixes_but_not_own_or_ambiguous_ids(
     assert len(list(module.specific_references("agent415c and agent0767", 0, ids))) == 2
     assert len(list(module.specific_references("415c's results", 0, ids))) == 1
     assert not list(module.specific_references("abcd and abcd0000; score 0.0767", 0, ids))
+
+
+def test_released_reasoning_text_is_counted_but_encrypted_content_is_not():
+    events = [{"kind": "model_response", "agent": 0, "sequence": 1, "elapsed_seconds": 1,
+               "response_id": "reasoning-text", "output": [{
+                   "type": "reasoning", "summary": [],
+                   "content": [{"type": "reasoning_text", "text": "Other agents may share results."}],
+                   "encrypted_content": "Other agents abcd1234 opaque-signature",
+               }]}]
+    _, mentions = module.analyze_events(events, {}, {0: "own-id", 1: "abcd1234"})
+    assert len(mentions) == 1
+    assert len(mentions[0]["excerpts"]) == 1
+    assert mentions[0]["excerpts"][0]["source"] == "reasoning_text"
+    assert mentions[0]["excerpts"][0]["tag"] == "explicit_peer_language"
+
+
+def test_discovery_is_first_listing_per_agent_and_type_with_either_as_union():
+    ids = {0: "own", 1: "peer"}
+    def listing(agent, path, entries, seq):
+        return [
+            {"kind": "tool_called", "tool": "list_files", "agent": agent,
+             "arguments": {"path": path}, "sequence": seq},
+            {"kind": "tool_result", "tool": "list_files", "agent": agent,
+             "result": entries, "sequence": seq + 1, "elapsed_seconds": seq},
+        ]
+    own = {"name": "own.md", "author_id": "own", "directory": False}
+    peer = {"name": "peer.md", "author_id": "peer", "directory": False}
+    events = []
+    for agent, path, entries, seq in [
+        (0, "/lab/notes", [], 1),
+        (0, "/lab/notes", [own], 3),
+        (0, "/lab/notes", [{**peer, "directory": True}], 5),
+        (0, "/workspace", [peer], 7),
+        (0, "/lab/notes", {"error": "denied"}, 9),
+        (0, "/lab/notes", [peer], 11),
+        (0, "/lab/notes", [peer], 13),
+        (0, "/lab/runs", [{**peer, "name": "result.json"}], 15),
+        (1, "/lab/runs", [{**own, "name": "own-result.json"}], 17),
+        (1, "/lab/notes", [own], 19),
+    ]:
+        events.extend(listing(agent, path, entries, seq))
+    discoveries = module.analyze_discoveries(events, ids)
+    assert [e["sequence"] for e in discoveries["discovered_peer_note"]] == [12, 20]
+    assert [e["sequence"] for e in discoveries["discovered_peer_result"]] == [16, 18]
+    assert [e["sequence"] for e in discoveries["discovered_either"]] == [12, 18]
+    assert discoveries["discovered_peer_result"][0]["path"] == "/lab/runs/result.json"
+
+
+def test_mentions_separate_successful_notes_reasoning_and_messages():
+    response = {"kind": "model_response", "agent": 0, "sequence": 1,
+                "elapsed_seconds": 1, "response_id": "response", "output": [
+                    {"type": "reasoning", "content": [{"text": "Other agents abcd1234"}]},
+                    {"type": "message", "content": [{"type": "output_text", "text": "Other agents"}]},
+                    {"type": "function_call", "name": "write_file",
+                     "arguments": '{"path":"/lab/notes/own.md","content":"Other agents"}'}]}
+    events = [response, response]
+    for index, (path, result) in enumerate([
+        ("/lab/notes/own.md", {"written": "/lab/notes/own.md"}),
+        ("/lab/notes/own.md", {"error": "denied"}),
+        ("/workspace/private.md", {"written": "/workspace/private.md"}),
+        ("/lab/notes/../private.md", {"written": "/lab/private.md"}),
+    ]):
+        events.extend([
+            {"kind": "tool_called", "agent": 0, "sequence": 2 + index * 2,
+             "tool": "write_file", "arguments": {"path": path, "content": "Other agents abcd1234"}},
+            {"kind": "tool_result", "agent": 0, "sequence": 3 + index * 2,
+             "elapsed_seconds": 2, "result": result}])
+    channels, coverage = module.analyze_mention_channels(events, {0: "aaaa0000", 1: "abcd1234"})
+    assert {key: len(value) for key, value in channels.items()} == {
+        "shared_notes": 1, "reasoning": 1, "assistant_messages": 1}
+    assert channels["shared_notes"][0]["sequence"] == 3
+    assert any(e["tag"] == "peer_id" for e in channels["shared_notes"][0]["excerpts"])
+    assert coverage == {"responses": 1, "responses_with_reasoning_text": 1}
+
+
+def test_unknown_authors_and_cancelled_listings_are_not_discoveries():
+    events = [
+        {"kind": "tool_called", "tool": "list_files", "agent": 0,
+         "arguments": {"path": "/lab/notes"}, "sequence": 1},
+        {"kind": "tool_result", "agent": 0, "sequence": 2, "elapsed_seconds": 1,
+         "result": [{"name": "unknown", "author_id": "unknown", "directory": False}]},
+        {"kind": "tool_called", "tool": "list_files", "agent": 0,
+         "arguments": {"path": "/lab/notes"}, "sequence": 3},
+        {"kind": "tool_cancelled", "agent": 0},
+        {"kind": "tool_result", "agent": 0, "sequence": 4, "elapsed_seconds": 2,
+         "result": [{"name": "peer", "author_id": "peer", "directory": False}]},
+    ]
+    assert all(not events for events in module.analyze_discoveries(events, {0: "own", 1: "peer"}).values())
+
+
+def test_note_rewrites_count_only_added_mentions():
+    def note_op(sequence, tool, content):
+        return [
+            {"kind": "tool_called", "agent": 0, "sequence": sequence, "tool": tool,
+             "arguments": {"path": "/lab/notes/own.md", "content": content}},
+            {"kind": "tool_result", "agent": 0, "sequence": sequence + 1, "elapsed_seconds": 1,
+             "result": {"written": "/lab/notes/own.md"}},
+        ]
+
+    first = "Other agents: abcd1234 found a peak.\n"
+    events = (
+        note_op(1, "write_file", first)  # new mentions: counted
+        + note_op(3, "write_file", first + "My plan: probe x3.\n")  # same mentions: not counted
+        + note_op(5, "write_file", first + "Ask beef5678 to take x4.\n")  # new peer ID: counted
+        + note_op(7, "append_file", "Thanks, abcd1234.\n")  # appends count as before
+    )
+    identities = {0: "aaaa0000", 1: "abcd1234", 2: "beef5678"}
+    channels, _ = module.analyze_mention_channels(events, identities)
+    notes = channels["shared_notes"]
+    assert [m["sequence"] for m in notes] == [2, 6, 8]
+    assert [[e["tag"] for e in m["excerpts"]] for m in notes] == [
+        ["explicit_peer_language", "peer_id"], ["peer_id"], ["peer_id"]]
