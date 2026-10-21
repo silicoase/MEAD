@@ -213,22 +213,29 @@ class PairPause:
                     pause_index=self.pause_count,
                     pause_seconds=duration,
                 )
+            resuming = asyncio.gather(
+                *(env.thaw() for env in tuple(self.environments)), return_exceptions=True
+            )
             try:
-                outcomes = await asyncio.gather(
-                    *(env.thaw() for env in tuple(self.environments)), return_exceptions=True
-                )
+                try:
+                    outcomes = await asyncio.shield(resuming)
+                except asyncio.CancelledError:
+                    # Finish the Docker unpause so cleanup removes running containers.
+                    await resuming
+                    raise
                 if any(isinstance(outcome, BaseException) for outcome in outcomes):
                     raise RuntimeError("sandbox resumption failed")
             except Exception as error:
                 self.error = RuntimeError(f"sandbox resume failed: {type(error).__name__}")
-            if duration:
-                self.emit(
-                    "cohort_pause_ended",
-                    pause_index=self.pause_count,
-                    pause_seconds=duration,
-                    total_pause_seconds=self.paused_seconds,
-                )
-            self.open.set()
+            finally:
+                if duration:
+                    self.emit(
+                        "cohort_pause_ended",
+                        pause_index=self.pause_count,
+                        pause_seconds=duration,
+                        total_pause_seconds=self.paused_seconds,
+                    )
+                self.open.set()
 
     async def abort(self):
         self.error = RuntimeError("coordinated pause cancelled")
@@ -239,3 +246,5 @@ class PairPause:
             if not self.worker.cancelling():
                 self.worker.cancel()
             await asyncio.shield(asyncio.gather(self.worker, return_exceptions=True))
+        # A worker cancelled before it started never ran its finally; reopen for cleanup.
+        self.open.set()

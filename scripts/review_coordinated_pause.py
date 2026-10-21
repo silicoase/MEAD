@@ -130,6 +130,7 @@ def review(batch, output, checks):
             {
                 "run_id": entry["run_id"],
                 "model": entry.get("model_key"),
+                "repetition": entry.get("repetition"),
                 "condition": entry["condition"],
                 "status": entry["status"],
                 "agents": entry["agents"],
@@ -161,14 +162,19 @@ def review(batch, output, checks):
         )
     # Compare only the period in which both arms still have recorded activity.
     # A completed arm need not log pauses occurring later in its remaining peer.
-    for model in manifest["model_configs"]:
-        streams = []
-        for row in rows:
-            if row["model"] != model or row["status"] not in {"finished", "error", "cancelled"}:
-                continue
-            events_path = batch / row["run_id"] / "events.jsonl"
-            if events_path.exists():
-                streams.append([json.loads(line) for line in events_path.read_text().splitlines()])
+    # Each matched pair (one model, one repetition) shares its pauses across both arms.
+    pairs = {}
+    for row in rows:
+        if row["model"] not in manifest["model_configs"] or row["status"] not in {
+            "finished", "error", "cancelled"
+        }:
+            continue
+        events_path = batch / row["run_id"] / "events.jsonl"
+        if events_path.exists():
+            pairs.setdefault((row["model"], row["repetition"]), []).append(
+                [json.loads(line) for line in events_path.read_text().splitlines()]
+            )
+    for (model, repetition), streams in pairs.items():
         if len(streams) == 2 and all(streams):
             overlap_end = min(es[-1]["timestamp"] for es in streams)
             shared = [
@@ -180,7 +186,9 @@ def review(batch, output, checks):
                 for es in streams
             ]
             if shared[0] != shared[1]:
-                violations.append([model, "conditions recorded different shared pauses"])
+                violations.append(
+                    [model, repetition, "conditions recorded different shared pauses"]
+                )
     result = {
         "batch": str(batch.resolve()),
         "status": manifest["status"],

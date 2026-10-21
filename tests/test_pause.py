@@ -586,3 +586,38 @@ async def test_cleanup_waits_for_thaw_and_runs_even_after_pause_failure():
         async with p.operation():
             pass
     await p.close()
+
+
+async def test_abort_during_thaw_finishes_unpause_and_reopens_for_cleanup():
+    p = PairPause(1)
+    thawing = asyncio.Event()
+    changes = []
+
+    class Sandbox:
+        async def freeze(self):
+            changes.append("freeze")
+
+        async def thaw(self):
+            thawing.set()
+            await asyncio.sleep(0.05)
+            changes.append("thaw completed")
+
+    p.environments.add(Sandbox())
+    p.request(0.02, model="test/model", agent=0)
+    await thawing.wait()
+    await p.abort()
+    assert changes == ["freeze", "thaw completed"]
+    assert p.open.is_set()
+    async with asyncio.timeout(1):
+        async with p.operation(cleanup=True):
+            pass
+
+
+async def test_abort_before_pause_worker_starts_reopens_for_cleanup():
+    p = PairPause(1)
+    p.request(0.5, model="test/model", agent=0)
+    await p.abort()
+    assert p.open.is_set()
+    async with asyncio.timeout(1):
+        async with p.operation(cleanup=True):
+            pass
