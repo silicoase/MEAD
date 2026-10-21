@@ -17,7 +17,8 @@ PEER_WORDS = re.compile(
 ID_REFERENCE = re.compile(r"\b(?P<label>agent\s*)?(?P<id>[0-9a-f]{4,32})\b", re.I)
 
 
-def specific_references(text, agent, identities):
+def specific_reference_owners(text, agent, identities):
+    """(position, referenced peer) for each unambiguous mention of another agent's ID."""
     for match in ID_REFERENCE.finditer(text):
         prefix = match["id"].lower()
         # Avoid treating short decimal numbers as IDs unless labeled "agent".
@@ -25,7 +26,28 @@ def specific_references(text, agent, identities):
             continue
         owners = [owner for owner, identity in identities.items() if identity.startswith(prefix)]
         if len(owners) == 1 and owners[0] != agent:
-            yield match.start()
+            yield match.start(), owners[0]
+
+
+def specific_references(text, agent, identities):
+    for position, _ in specific_reference_owners(text, agent, identities):
+        yield position
+
+
+def new_mention_tags(text, previous, agent, identities):
+    """Mention tags in text beyond those already in previous (a note's prior version)."""
+    words = list(PEER_WORDS.finditer(text))
+    old_words = len(PEER_WORDS.findall(previous))
+    tags = [("explicit_peer_language", words[old_words].start())] if len(words) > old_words else []
+    old_refs = {}
+    for _, owner in specific_reference_owners(previous, agent, identities):
+        old_refs[owner] = old_refs.get(owner, 0) + 1
+    seen = {}
+    for position, owner in specific_reference_owners(text, agent, identities):
+        seen[owner] = seen.get(owner, 0) + 1
+        if seen[owner] > old_refs.get(owner, 0):
+            tags.append(("peer_id", position))
+    return tags
 
 
 def authored_text(output):
@@ -112,12 +134,12 @@ def analyze_mention_channels(events, identities):
     coverage = {"responses": 0, "responses_with_reasoning_text": 0}
     pending, seen = {}, set()
 
-    def record(channel, event, texts):
+    notes = {}  # (agent, note name) -> current content, to see what a rewrite adds
+
+    def record(channel, event, texts, previous=""):
         excerpts = []
         for source, text in texts:
-            match = PEER_WORDS.search(text)
-            tags = [("explicit_peer_language", match.start())] if match else []
-            tags += [("peer_id", pos) for pos in specific_references(text, event["agent"], identities)]
+            tags = new_mention_tags(text, previous, event["agent"], identities)
             excerpts.extend({"source": source, "tag": tag,
                              "excerpt": text[max(0, pos - 100):pos + 250]}
                             for tag, pos in tags)
@@ -144,7 +166,16 @@ def analyze_mention_channels(events, identities):
                     or not isinstance(result, dict) or "error" in result
                     or not (result.get("written") or result.get("appended"))):
                 continue
-            record("shared_notes", event, [("successful_shared_note", args.get("content", ""))])
+            content = args.get("content", "")
+            key = (event["agent"], path.name)
+            if call["tool"] == "append_file":
+                record("shared_notes", event, [("successful_shared_note", content)])
+                notes[key] = notes.get(key, "") + content
+            else:
+                # A rewrite repeats the note's earlier text; count only mentions it adds.
+                record("shared_notes", event, [("successful_shared_note", content)],
+                       previous=notes.get(key, ""))
+                notes[key] = content
         elif kind == "model_response":
             identity = event.get("response_id") or (event["agent"], event["sequence"])
             if identity in seen:

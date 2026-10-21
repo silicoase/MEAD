@@ -162,3 +162,27 @@ def test_unknown_authors_and_cancelled_listings_are_not_discoveries():
          "result": [{"name": "peer", "author_id": "peer", "directory": False}]},
     ]
     assert all(not events for events in module.analyze_discoveries(events, {0: "own", 1: "peer"}).values())
+
+
+def test_note_rewrites_count_only_added_mentions():
+    def note_op(sequence, tool, content):
+        return [
+            {"kind": "tool_called", "agent": 0, "sequence": sequence, "tool": tool,
+             "arguments": {"path": "/lab/notes/own.md", "content": content}},
+            {"kind": "tool_result", "agent": 0, "sequence": sequence + 1, "elapsed_seconds": 1,
+             "result": {"written": "/lab/notes/own.md"}},
+        ]
+
+    first = "Other agents: abcd1234 found a peak.\n"
+    events = (
+        note_op(1, "write_file", first)  # new mentions: counted
+        + note_op(3, "write_file", first + "My plan: probe x3.\n")  # same mentions: not counted
+        + note_op(5, "write_file", first + "Ask beef5678 to take x4.\n")  # new peer ID: counted
+        + note_op(7, "append_file", "Thanks, abcd1234.\n")  # appends count as before
+    )
+    identities = {0: "aaaa0000", 1: "abcd1234", 2: "beef5678"}
+    channels, _ = module.analyze_mention_channels(events, identities)
+    notes = channels["shared_notes"]
+    assert [m["sequence"] for m in notes] == [2, 6, 8]
+    assert [[e["tag"] for e in m["excerpts"]] for m in notes] == [
+        ["explicit_peer_language", "peer_id"], ["peer_id"], ["peer_id"]]
