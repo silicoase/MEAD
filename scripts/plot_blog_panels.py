@@ -101,7 +101,7 @@ def render(source, batch, output):
         elif metric == "peer_reads":
             note += " Successful peer-file reads, including repeated reads. Direct Python reads are not recorded."
         elif metric in {"peer_mentions", "specific_mentions"}:
-            note += " Successful shared-note writes/appends containing a peer mention; each operation counts once."
+            note += " Successful shared-note writes/appends that add a peer mention. Each operation counts once."
         elif "reasoning" in metric:
             note += " Available reasoning text/summaries only; each response counts once. Coverage varies by provider."
         elif "assistant_message" in metric:
